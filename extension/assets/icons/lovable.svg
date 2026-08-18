@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="lovable" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF6B9A"/>
+      <stop offset="0.5" stop-color="#F34F8C"/>
+      <stop offset="1" stop-color="#9B5CFF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Lovable-style heart mark -->
+  <path
+    d="M32 54
+       C28.5 50.8 12 37.5 12 24
+       C12 16.8 17.2 12 23.4 12
+       C27.2 12 30.3 14 32 17
+       C33.7 14 36.8 12 40.6 12
+       C46.8 12 52 16.8 52 24
+       C52 37.5 35.5 50.8 32 54 Z"
+    fill="url(#lovable)"/>
+
+  <path
+    d="M21 20
+       C18.7 21.5 18 24 18.4 26.2"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-opacity=".55"
+    stroke-width="2.5"
+    stroke-linecap="round"/>
+</svg>

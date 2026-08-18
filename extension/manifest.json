@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Atlas New Tab",
+  "version": "1.0.0",
+  "description": "A calm, editorial new tab with cinematic live wallpapers, shortcut cards, search and a compact assistant.",
+  "permissions": ["storage"],
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "icons": {
+    "48": "assets/icons/icon-48.png",
+    "128": "assets/icons/icon-128.png"
+  }
+}

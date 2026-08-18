@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>New Tab</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- LIVE WALLPAPER (two layers for crossfade) -->
+    <div class="wallpaper">
+      <video class="wp-layer is-active" id="videoA" muted loop playsinline preload="auto"></video>
+      <video class="wp-layer" id="videoB" muted loop playsinline preload="auto"></video>
+      <div class="wp-veil"></div>
+    </div>
+
+    <!-- TOP LEFT: clock + workspaces -->
+    <header class="clock">
+      <div class="clock-time"><span id="time">--:--</span><span class="meridiem" id="meridiem">AM</span></div>
+      <div class="clock-date" id="date"></div>
+      <nav class="strip" id="strip" aria-label="Workspaces"></nav>
+    </header>
+
+    <!-- LEFT + RIGHT FLOATING PANELS -->
+    <section class="dock dock-left" id="dockLeft"></section>
+    <section class="dock dock-right" id="dockRight"></section>
+
+    <!-- BOTTOM CENTER: search -->
+    <form class="search" id="search" autocomplete="off">
+      <span class="search-glyph" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+      </span>
+      <input id="q" type="text" placeholder="Search Google..." aria-label="Search Google" />
+      <button type="submit" class="search-go" aria-label="Search">↵</button>
+    </form>
+
+    <!-- WALLPAPER CONTROL -->
+    <div class="wp-control" id="wpControl">
+      <button class="wp-toggle" id="wpToggle" aria-label="Change wallpaper">◑</button>
+      <div class="wp-menu" id="wpMenu" hidden></div>
+    </div>
+
+    <!-- QUICK PEEK -->
+    <div class="peek" id="peek">
+      <button class="peek-toggle" id="peekToggle">Quick Peek</button>
+      <div class="peek-panel" id="peekPanel" hidden></div>
+    </div>
+
+    <!-- AI CHAT -->
+    <div class="ai" id="ai">
+      <button class="ai-bubble" id="aiToggle" aria-label="Open assistant">✦</button>
+      <div class="ai-panel" id="aiPanel" hidden>
+        <div class="ai-head">
+          <span>Assistant</span>
+          <button class="ai-close" id="aiClose" aria-label="Close assistant">✕</button>
+        </div>
+        <div class="ai-log" id="aiLog"></div>
+        <form class="ai-form" id="aiForm">
+          <input id="aiInput" type="text" placeholder="Message..." aria-label="Message assistant" />
+          <button type="submit" aria-label="Send">→</button>
+        </form>
+      </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
