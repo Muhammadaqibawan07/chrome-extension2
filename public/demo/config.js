@@ -11,6 +11,9 @@ const WALLPAPERS = [
   { id: "w1", label: "Wallpaper 01", file: "wallpapers/wallpaper-1.mp4" },
   { id: "w2", label: "Wallpaper 02", file: "wallpapers/wallpaper-2.mp4" },
   { id: "w3", label: "Wallpaper 03", file: "wallpapers/wallpaper-3.mp4" },
+  { id: "w4", label: "Wallpaper 04", file: "wallpapers/wallpaper-4.mp4" },
+  { id: "w5", label: "Wallpaper 05", file: "wallpapers/wallpaper-5.mp4" },
+  { id: "w6", label: "Wallpaper 06", file: "wallpapers/wallpaper-6.mp4" },
 ];
 
 /* ---------- 2. WORKSPACES + CARD CONTENT ----------------------

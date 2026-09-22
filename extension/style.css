@@ -15,6 +15,13 @@
   --r-sm: 9px;
   --shadow: 0 14px 34px -20px rgba(0, 0, 0, 0.7);
   --edge: clamp(20px, 2.6vw, 48px);
+  /* wallpaper menu shows ~3 rows before it scrolls */
+  /* measured from the real clock block at runtime (app.js); the fallback
+     covers the first paint and any no-JS case */
+  --clock-h: 118px;
+  --wp-menu-row: 28.4px;
+  /* 3 full rows + a sliver of the 4th, so it reads as scrollable */
+  --wp-menu-h: calc(var(--wp-menu-row) * 3.4 + 10px);
   --card-w: clamp(196px, 17vw, 292px);
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --font: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
@@ -128,13 +135,26 @@ html, body {
 .dock {
   position: fixed;
   z-index: 2;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
+  bottom: 0;
   width: var(--card-w);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: clamp(12px, 1.2vh, 20px);
+  /* the docks are a frame for the wallpaper, not a wall: only the cards
+     inside them catch the pointer */
+  pointer-events: none;
+  padding: calc(var(--edge) + var(--clock-h) + 16px) 0 calc(var(--edge) + 72px);
 }
+.dock > * { pointer-events: auto; }
+/* if the cards outgrow the viewport the dock scrolls on its own */
+.dock {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.dock::-webkit-scrollbar { display: none; }
 .dock-left { left: var(--edge); }
 .dock-right { right: var(--edge); }
 
@@ -287,15 +307,34 @@ html, body {
 .wp-menu {
   position: absolute;
   bottom: 40px; left: 0;
-  min-width: 150px;
+  min-width: 158px;
   padding: 5px;
   border-radius: var(--r-md);
   border: 1px solid var(--line);
   background: rgba(18, 18, 22, 0.52);
   backdrop-filter: blur(14px);
   box-shadow: var(--shadow);
+  /* show 3 rows, scroll the rest */
+  max-height: var(--wp-menu-h);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+  animation: menu-in 200ms var(--ease) both;
+}
+.wp-menu::-webkit-scrollbar { width: 6px; }
+.wp-menu::-webkit-scrollbar-track { background: transparent; }
+.wp-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+.wp-menu::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.38); }
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to { opacity: 1; transform: none; }
 }
 .wp-menu button {
+  position: relative;
   display: block;
   width: 100%;
   text-align: left;
@@ -304,12 +343,31 @@ html, body {
   color: var(--ink-soft);
   font: inherit;
   font-size: 12px;
-  padding: 7px 9px;
+  padding: 7px 9px 7px 20px;
   border-radius: var(--r-sm);
   cursor: pointer;
+  white-space: nowrap;
+  transition: background 160ms var(--ease), color 160ms var(--ease),
+    padding-left 160ms var(--ease);
 }
-.wp-menu button:hover { background: rgba(255, 255, 255, 0.1); color: var(--ink); }
+.wp-menu button::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 160ms var(--ease), transform 220ms var(--ease);
+}
+.wp-menu button:hover { background: rgba(255, 255, 255, 0.1); color: var(--ink); padding-left: 23px; }
+.wp-menu button:focus-visible { outline: 1px solid var(--line-hi); outline-offset: -1px; }
 .wp-menu button.is-on { color: var(--accent); }
+.wp-menu button.is-on::before { opacity: 1; transform: scale(1); }
 
 /* ---------- quick peek ---------- */
 .peek { position: fixed; right: var(--edge); top: var(--edge); z-index: 3; text-align: right; }
@@ -422,6 +480,153 @@ html, body {
 }
 .ai-form button:hover { background: rgba(255, 255, 255, 0.2); }
 
+
+/* ================= MOTION =================================================
+   Entrance choreography + interaction polish. Everything here is disabled
+   wholesale by the prefers-reduced-motion block at the bottom of the file. */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-22px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(22px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.8); }
+  60% { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+/* the search bar is centred with translateX(-50%), so its entrance has to
+   carry that through every keyframe or the bar lands half a width to the
+   right once the animation fills forwards */
+@keyframes fade-up-centered {
+  from { opacity: 0; transform: translateX(-50%) translateY(14px); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+@keyframes wp-drift {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to { transform: scale(1.09) translate3d(0, -1.2%, 0); }
+}
+
+/* slow Ken-Burns drift on the live wallpaper */
+.wp-layer.is-active {
+  animation: wp-drift 42s ease-in-out infinite alternate;
+}
+
+/* clock */
+.clock-time { animation: fade-up 620ms var(--ease) both; }
+.clock-date { animation: fade-up 620ms var(--ease) 90ms both; }
+.strip { animation: fade-up 620ms var(--ease) 170ms both; }
+
+/* the digits themselves fade in whenever the minute rolls over */
+@keyframes digit-in {
+  from { opacity: 0.35; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+#time.is-tick { animation: digit-in 420ms var(--ease); }
+
+/* docks slide in from their own edge, cards stagger behind them */
+.dock-left { animation: slide-in-left 640ms var(--ease) 120ms both; }
+.dock-right { animation: slide-in-right 640ms var(--ease) 200ms both; }
+
+.card { animation: fade-up 520ms var(--ease) both; }
+.dock-left .card:nth-child(1) { animation-delay: 220ms; }
+.dock-left .card:nth-child(2) { animation-delay: 300ms; }
+.dock-right .card:nth-child(1) { animation-delay: 300ms; }
+.dock-right .card:nth-child(2) { animation-delay: 380ms; }
+
+/* shortcut rows cascade inside each card */
+.tile { animation: fade-in 420ms var(--ease) both; }
+.tile:nth-child(1) { animation-delay: 340ms; }
+.tile:nth-child(2) { animation-delay: 380ms; }
+.tile:nth-child(3) { animation-delay: 420ms; }
+.tile:nth-child(4) { animation-delay: 460ms; }
+.tile:nth-child(5) { animation-delay: 500ms; }
+.tile:nth-child(6) { animation-delay: 540ms; }
+
+/* icon lifts and brightens with its row */
+.tile-icon, .tile-fallback {
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease),
+    filter 220ms var(--ease);
+}
+.tile:hover .tile-icon,
+.tile:hover .tile-fallback {
+  transform: scale(1.12) rotate(-3deg);
+  filter: saturate(1.15) brightness(1.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+.tile:active { transform: translateX(2px) scale(0.985); }
+
+/* card gains a soft sheen on hover */
+.card { position: relative; overflow: hidden; }
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    120% 90% at 50% 0%,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0) 62%
+  );
+  opacity: 0;
+  transition: opacity 280ms var(--ease);
+  pointer-events: none;
+}
+.card:hover::after { opacity: 1; }
+
+/* bottom-edge furniture */
+.search { animation: fade-up-centered 620ms var(--ease) 260ms both; }
+.wp-control { animation: pop-in 480ms var(--ease) 380ms both; }
+.peek { animation: fade-up 560ms var(--ease) 320ms both; }
+.ai { animation: pop-in 520ms var(--ease) 440ms both; }
+
+/* search focus grows the pill slightly */
+.search {
+  transition: border-color 200ms var(--ease), background 200ms var(--ease),
+    width 280ms var(--ease), box-shadow 280ms var(--ease);
+}
+.search:focus-within {
+  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.8);
+}
+.search-go { transition: background 180ms var(--ease), transform 180ms var(--ease); }
+.search-go:hover { transform: scale(1.08); }
+.search-go:active { transform: scale(0.94); }
+
+/* assistant bubble breathes until it is first opened */
+@keyframes bubble-pulse {
+  0%, 100% { box-shadow: var(--shadow), 0 0 0 0 rgba(216, 195, 165, 0.28); }
+  50% { box-shadow: var(--shadow), 0 0 0 9px rgba(216, 195, 165, 0); }
+}
+.ai-bubble { animation: bubble-pulse 3.4s ease-out 1.6s infinite; }
+.ai-bubble:hover { animation-play-state: paused; }
+.ai-bubble:active { transform: scale(0.94); }
+
+/* chat messages arrive */
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.msg { animation: msg-in 260ms var(--ease) both; }
+
+/* peek + strip micro-interactions */
+.peek-panel { animation: menu-in 200ms var(--ease) both; }
+.peek-panel a { transition: background 160ms var(--ease), color 160ms var(--ease), transform 160ms var(--ease); }
+.peek-panel a:hover { transform: translateX(2px); }
+.strip button:active { transform: scale(0.96); }
+.wp-toggle { transition: color 180ms var(--ease), background 180ms var(--ease), transform 320ms var(--ease); }
+.wp-toggle:hover { transform: rotate(180deg); }
+
 /* ---------- high-resolution polish ---------- */
 @media (min-width: 2400px) {
   :root { --card-w: clamp(240px, 15vw, 320px); --r-lg: 20px; }
@@ -434,23 +639,177 @@ html, body {
   .search { width: min(560px, 26vw); height: 52px; }
 }
 
-/* ---------- small screens ---------- */
-@media (max-height: 720px) {
-  .dock { gap: 10px; }
+/* ================= RESPONSIVE =============================================
+   Four bands: desktop (default, edge docks) -> laptop -> tablet (docks drop
+   below the clock, side by side) -> phone (single scrolling column).       */
+
+/* short laptop screens: tighten the vertical rhythm */
+@media (max-height: 820px) {
+  .dock { gap: 10px; padding: calc(var(--edge) + var(--clock-h) + 10px) 0 calc(var(--edge) + 64px); }
   .card { padding: 11px 11px 9px; }
   .tile { padding: 6px 8px; }
+  .tile-name { font-size: 12px; }
 }
-@media (max-width: 1000px) {
-  :root { --card-w: min(46vw, 260px); }
-  .dock { top: auto; bottom: calc(var(--edge) + 62px); transform: none; }
+@media (max-height: 620px) {
+  .card-head { margin-bottom: 7px; }
+  .tile { padding: 5px 8px; }
+  .tile-icon, .tile-fallback { width: 19px; height: 19px; }
+  .clock-time { font-size: clamp(24px, 3.4vh, 32px); }
+  .search { height: 40px; }
+}
+
+/* laptop */
+@media (max-width: 1280px) {
+  :root { --card-w: clamp(182px, 19vw, 240px); }
+  .search { width: min(460px, 44vw); }
+}
+
+/* tablet: the edge docks would crowd the wallpaper, so bring them inboard
+   as a two-column band that flows in the normal document order. */
+@media (max-width: 1024px) {
+  :root { --edge: clamp(16px, 3.4vw, 28px); }
+
+  /* two columns under the clock rather than pinned to the viewport edges */
+  .dock {
+    top: calc(var(--edge) + var(--clock-h) + 14px);
+    bottom: calc(var(--edge) + 68px);
+    width: calc((100vw - 2 * var(--edge) - 14px) / 2);
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 0;
+  }
+  .dock-left, .dock-right { animation: fade-up 560ms var(--ease) both; }
+  .dock-left { animation-delay: 140ms; }
+  .dock-right { animation-delay: 220ms; }
+  .dock-left { left: var(--edge); }
+  .dock-right { right: var(--edge); }
+
   .peek { display: none; }
-  .search { width: min(78vw, 420px); }
+  .search { width: calc(100vw - 2 * var(--edge) - 108px); max-width: 520px; }
 }
-@media (max-width: 680px) {
-  .dock-right { display: none; }
-  .dock-left { width: calc(100vw - 2 * var(--edge)); }
+
+/* phone: one column, everything scrolls, edge furniture gets out of the way */
+@media (max-width: 720px) {
+  :root {
+    --edge: 14px;
+    --r-lg: 16px;
+  }
+
+  html, body { overflow: hidden; }
+
+  .dock {
+    position: fixed;
+    left: var(--edge);
+    right: var(--edge);
+    width: auto;
+    top: calc(var(--edge) + var(--clock-h) + 12px);
+    bottom: calc(var(--edge) + 64px);
+    overflow-y: auto;
+    gap: 10px;
+    padding: 0;
+  }
+  /* one column: the left dock takes the upper half, the right dock the
+     lower half. Each scrolls independently so neither can push the other
+     off-screen. */
+  .dock-left {
+    top: calc(var(--edge) + var(--clock-h) + 12px);
+    bottom: 50%;
+    margin-bottom: 5px;
+  }
+  .dock-right {
+    top: 50%;
+    bottom: calc(var(--edge) + 64px);
+    margin-top: 5px;
+  }
+
+  .clock-time { font-size: clamp(26px, 7.6vw, 34px); }
+  .clock-date { font-size: 10px; letter-spacing: 0.18em; }
+  .strip { margin-top: 10px; }
+  .strip button { padding: 5px 11px; font-size: 10px; }
+
+  .card { padding: 12px 12px 10px; }
+  .tile { padding: 9px 8px; }         /* bigger touch target */
+  .tile-name { font-size: 13px; }
+  .tile-icon, .tile-fallback { width: 24px; height: 24px; }
+
+  /* sits on the bottom edge, inset between the wallpaper toggle (30px,
+     bottom-left) and the assistant bubble (40px, bottom-right) */
+  .search {
+    left: calc(var(--edge) + 40px);
+    right: calc(var(--edge) + 50px);
+    transform: none;
+    width: auto;
+    max-width: none;
+    bottom: var(--edge);
+    height: 44px;
+    padding: 0 5px 0 12px;
+    gap: 7px;
+    /* inset rather than centre-pulled here, so the plain entrance applies */
+    animation-name: fade-up;
+  }
+  .search input { font-size: 16px; }  /* stops iOS zoom-on-focus */
+
+  .wp-menu { max-height: calc(var(--wp-menu-row) * 3.4 + 10px); }
+  .ai-panel { width: min(300px, calc(100vw - 2 * var(--edge))); }
+}
+
+/* very small / landscape phones */
+@media (max-width: 420px) {
+  .card-hint { display: none; }
+  .tile-name { font-size: 12.5px; }
+}
+@media (max-height: 460px) and (orientation: landscape) {
+  .dock {
+    top: calc(var(--edge) + var(--clock-h) + 8px);
+    bottom: calc(var(--edge) + 58px);
+  }
+  /* landscape has width to spare: go back to two side-by-side columns */
+  .dock-left {
+    left: var(--edge); right: auto;
+    width: calc(50vw - var(--edge) - 6px);
+    top: calc(var(--edge) + var(--clock-h) + 8px);
+    bottom: calc(var(--edge) + 58px);
+    margin-bottom: 0;
+  }
+  .dock-right {
+    right: var(--edge); left: auto;
+    width: calc(50vw - var(--edge) - 6px);
+    top: calc(var(--edge) + var(--clock-h) + 8px);
+    bottom: calc(var(--edge) + 58px);
+    margin-top: 0;
+  }
+  .clock-time { font-size: 22px; }
+  /* inherits the inset left/right from the phone block, so it still clears
+     the toggle and the bubble */
+  .search { height: 40px; bottom: var(--edge); }
+}
+
+/* respect device safe areas (notches, home indicator) */
+@supports (padding: env(safe-area-inset-left)) {
+  @media (max-width: 1024px) {
+    .dock-left, .wp-control { margin-left: env(safe-area-inset-left); }
+    .dock-right, .ai, .peek { margin-right: env(safe-area-inset-right); }
+    .clock { margin-left: env(safe-area-inset-left); margin-top: env(safe-area-inset-top); }
+    .search, .wp-control, .ai { margin-bottom: env(safe-area-inset-bottom); }
+  }
+}
+
+/* coarse pointers get no hover-lift, but keep the press feedback */
+@media (hover: none) {
+  .card:hover { transform: none; }
+  .tile:hover { transform: none; background: transparent; }
+  .tile:active { background: rgba(255, 255, 255, 0.14); transform: scale(0.98); }
+  .wp-toggle:hover { transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .wp-layer.is-active { animation: none; transform: translateZ(0); }
 }

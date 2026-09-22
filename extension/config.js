@@ -11,6 +11,9 @@ const WALLPAPERS = [
   { id: "w1", label: "Wallpaper 01", file: "wallpapers/wallpaper-1.mp4" },
   { id: "w2", label: "Wallpaper 02", file: "wallpapers/wallpaper-2.mp4" },
   { id: "w3", label: "Wallpaper 03", file: "wallpapers/wallpaper-3.mp4" },
+  { id: "w4", label: "Wallpaper 04", file: "wallpapers/wallpaper-4.mp4" },
+  { id: "w5", label: "Wallpaper 05", file: "wallpapers/wallpaper-5.mp4" },
+  { id: "w6", label: "Wallpaper 06", file: "wallpapers/wallpaper-6.mp4" },
 ];
 
 /* ---------- 2. ICONS ------------------------------------------
@@ -51,12 +54,12 @@ const ICONS = {
   cloud: "cloud.svg",
   keep: "keep.svg",
   inbox: "inbox.svg",
-  googlechat:"googlechat.svg",
-animesuge: "animesuge.svg",
-manga:"manga.svg",
-chatgpt:"",
-wallpaper:"wallpaper.svg",
-lovable:"lovable.svg",
+  googlechat: "googlechat.svg",
+  animesuge: "animesuge.svg",
+  manga: "manga.svg",
+  chatgpt: "",
+  wallpaper: "wallpaper.svg",
+  lovable: "lovable.svg",
 };
 
 /* ---------- 3. WORKSPACES + CARD CONTENT ----------------------
@@ -74,12 +77,12 @@ const WORKSPACES = [
         items: [
           { name: "YouTube", url: "https://youtube.com", icon: "youtube" },
           { name: "Gmail", url: "https://mail.google.com", icon: "gmail" },
-          {name:"Googlechat", url:"https://chat.google.com/app/home", icon:"googlechat"},
+          { name: "Googlechat", url: "https://chat.google.com/app/home", icon: "googlechat" },
           { name: "Spotify", url: "https://open.spotify.com", icon: "spotify" },
-          {name:"Wallpaper", url:"https://wallpaperwaves.com/", icon:"wallpaper"},
-          { name: "AnimeSuge",url: "https://animesuge.com/", icon: "animesuge"},
-          {name:"Manga", url:"https://mangahub.io/search?q=&order=ALPHABET&genre=all", icon:"manga"},
-          {name:"Chatgpt", url:"https://chatgpt.com/", icon:"G",},
+          { name: "Wallpaper", url: "https://wallpaperwaves.com/", icon: "wallpaper" },
+          { name: "AnimeSuge", url: "https://animesuge.com/", icon: "animesuge" },
+          { name: "Manga", url: "https://mangahub.io/search?q=&order=ALPHABET&genre=all", icon: "manga" },
+          { name: "Chatgpt", url: "https://chatgpt.com/", icon: "G", },
         ],
       },
       {
@@ -122,7 +125,7 @@ const WORKSPACES = [
           { name: "GitHub", url: "https://github.com", icon: "github" },
           { name: "Linear", url: "https://linear.app", icon: "linear" },
           { name: "Slack", url: "https://slack.com", icon: "slack" },
-          {name: "lovable", url:"https://lovable.dev/dashboard", icon:"lovable"},
+          { name: "lovable", url: "https://lovable.dev/dashboard", icon: "lovable" },
         ],
       },
       {

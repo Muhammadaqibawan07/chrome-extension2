@@ -32,22 +32,40 @@
   const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  function renderClock() {
+  function renderClock(animate = false) {
     const d = new Date();
     let h = d.getHours();
     const m = String(d.getMinutes()).padStart(2, "0");
     const ap = h >= 12 ? "PM" : "AM";
     h = h % 12 || 12;
-    timeEl.textContent = `${h}:${m}`;
+    const next = `${h}:${m}`;
+    if (animate && timeEl.textContent !== next) {
+      timeEl.classList.remove("is-tick");
+      void timeEl.offsetWidth; // restart the animation
+      timeEl.classList.add("is-tick");
+    }
+    timeEl.textContent = next;
     meridiemEl.textContent = ap;
     dateEl.textContent = `${DAYS[d.getDay()]} · ${d.getDate()} ${MONTHS[d.getMonth()]}`;
   }
   renderClock();
   // tick exactly on the next minute, then every minute
   setTimeout(function tick() {
-    renderClock();
-    setInterval(renderClock, 60000);
+    renderClock(true);
+    setInterval(() => renderClock(true), 60000);
   }, (60 - new Date().getSeconds()) * 1000);
+
+  /* the docks sit below the clock block; its height depends on the clamped
+     font sizes, so measure the real thing instead of guessing an offset */
+  const clockEl = document.querySelector(".clock");
+  function syncClockHeight() {
+    if (!clockEl) return;
+    const h = Math.ceil(clockEl.getBoundingClientRect().height);
+    if (h) document.documentElement.style.setProperty("--clock-h", h + "px");
+  }
+  syncClockHeight();
+  addEventListener("resize", syncClockHeight);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncClockHeight);
 
   /* ================= WALLPAPER =========================================== */
   const layers = [$("videoA"), $("videoB")];
@@ -107,6 +125,11 @@
   $("wpToggle").addEventListener("click", (e) => {
     e.stopPropagation();
     wpMenu.hidden = !wpMenu.hidden;
+    if (!wpMenu.hidden) {
+      // the list scrolls past 3 entries — bring the current one into view
+      const on = wpMenu.querySelector("button.is-on");
+      if (on) on.scrollIntoView({ block: "nearest" });
+    }
   });
   document.addEventListener("click", (e) => {
     if (!$("wpControl").contains(e.target)) wpMenu.hidden = true;
@@ -306,6 +329,7 @@
     try { usage = s.usage ? JSON.parse(s.usage) : {}; } catch { usage = {}; }
     renderStrip();
     renderCards();
+    syncClockHeight(); // the strip is part of the clock block
     setWallpaper(s.wallpaper || WALLPAPERS[0].id, true);
     $("q").focus();
   });
