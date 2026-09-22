@@ -303,7 +303,7 @@
     addMsg(text, "me");
     history.push({ role: "user", content: text });
     input.value = "";
-
+    // comit
     if (!AI_CONFIG.endpoint) {
       addMsg(AI_CONFIG.notConfigured, "bot");
       return;
