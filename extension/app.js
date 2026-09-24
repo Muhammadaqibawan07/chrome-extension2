@@ -1885,7 +1885,7 @@
     const send = (msg) => {
       try { chrome.runtime.sendMessage(msg).catch(() => {}); } catch {}
     };
-    const cmd = (action, time) => now && send({ type: "media:cmd", tabId: now.tabId, action, time });
+    const cmd = (action, time) => now && send({ type: "media:cmd", tabId: now.tabId, frameId: now.frameId, action, time });
 
     const fmt = (s) => {
       s = Math.max(0, Math.floor(s || 0));
