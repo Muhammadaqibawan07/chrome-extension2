@@ -1027,6 +1027,48 @@ html, body {
 .search-go:hover { transform: scale(1.08); }
 .search-go:active { transform: scale(0.94); }
 
+/* a soft light travels clockwise around the border of the search pill and
+   the cards. It is an SVG outline (see TRACE_SVG in app.js) whose dashes
+   run along the real perimeter, so the speed is the same on every edge and
+   corner. pathLength="100" makes the dash sizes percentages of the loop. */
+.trace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.search .trace { inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); }
+.trace rect {
+  x: 0.75px;
+  y: 0.75px;
+  width: calc(100% - 1.5px);
+  height: calc(100% - 1.5px);
+  rx: var(--trace-rx, 16px);
+  fill: none;
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+  animation: 8s linear infinite;
+}
+/* a single soft dash in the dim accent tone, starting at the top-left
+   corner and moving top -> right -> bottom -> left */
+.trace .trace-line {
+  stroke: rgba(216, 195, 165, 0.55);
+  stroke-dasharray: 26 74;
+  animation-name: trace-run;
+  /* same accent tone bled outward, so the dash reads as light, not a line */
+  filter: drop-shadow(0 0 2px rgba(216, 195, 165, 0.9))
+    drop-shadow(0 0 6px rgba(216, 195, 165, 0.6));
+}
+@keyframes trace-run { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+
+/* radius of the traced outline = element radius minus the half-stroke inset */
+.card { --trace-rx: calc(var(--r-lg) - 1.75px); }
+.search { --trace-rx: 21.25px; }         /* 44px pill */
+.card:nth-child(2n) .trace rect { animation-delay: -2.7s; }
+.card:nth-child(3n) .trace rect { animation-delay: -5.3s; }
+
 /* assistant bubble breathes until it is first opened */
 @keyframes bubble-pulse {
   0%, 100% { box-shadow: var(--shadow), 0 0 0 0 rgba(216, 195, 165, 0.28); }
@@ -1060,7 +1102,7 @@ html, body {
   .tile-name { font-size: 14px; }
   .card-title { font-size: 14px; }
   .tile-icon, .tile-fallback { width: 26px; height: 26px; }
-  .search { width: min(560px, 26vw); height: 52px; }
+  .search { width: min(560px, 26vw); height: 52px; --trace-rx: 25.25px; }
 }
 
 /* ================= RESPONSIVE =============================================
@@ -1079,7 +1121,7 @@ html, body {
   .tile { padding: 5px 8px; }
   .tile-icon, .tile-fallback { width: 19px; height: 19px; }
   .clock-time { font-size: clamp(24px, 3.4vh, 32px); }
-  .search { height: 40px; }
+  .search { height: 40px; --trace-rx: 19.25px; }
 }
 
 /* laptop */
@@ -1205,7 +1247,7 @@ html, body {
   .clock-time { font-size: 22px; }
   /* inherits the inset left/right from the phone block, so it still clears
      the toggle and the bubble */
-  .search { height: 40px; bottom: var(--edge); }
+  .search { height: 40px; bottom: var(--edge); --trace-rx: 19.25px; }
 }
 
 /* respect device safe areas (notches, home indicator) */
@@ -1236,4 +1278,5 @@ html, body {
     scroll-behavior: auto !important;
   }
   .wp-layer.is-active { animation: none; transform: translateZ(0); }
+  .trace { display: none; }
 }

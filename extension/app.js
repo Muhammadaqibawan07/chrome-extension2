@@ -4,6 +4,11 @@
 (() => {
   "use strict";
 
+  /* border light for cards; same markup as the one inside the search form */
+  const TRACE_SVG =
+    '<svg class="trace" aria-hidden="true">' +
+    '<rect class="trace-line" pathLength="100"/></svg>';
+
   /* ---------- storage (chrome.storage.local with localStorage fallback) --- */
   const hasChrome = typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
   const store = {
@@ -336,6 +341,8 @@
       const el = document.createElement("article");
       el.className = "card";
       el.dataset.card = card.id;
+      /* light that travels around the border (styled in style.css) */
+      el.insertAdjacentHTML("afterbegin", TRACE_SVG);
 
       const head = document.createElement("div");
       head.className = "card-head";
