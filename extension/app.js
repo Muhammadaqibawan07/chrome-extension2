@@ -1416,7 +1416,7 @@
       setBusy(false);
       setStatus("off");
       history.pop();
-      addMsg("Couldn't reach the assistant server. Is it running? (npm run assistant)", "bot", true);
+      addMsg("Couldn't reach the assistant server. Check your connection and AI_CONFIG.endpoint in config.js.", "bot", true);
     }
     aiInput.focus();
   });
