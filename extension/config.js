@@ -63,10 +63,17 @@ const ICONS = {
 };
 
 /* ---------- 3. WORKSPACES + CARD CONTENT ----------------------
-   Each workspace holds 4 compact cards, 3 shortcuts each.
+   These are the DEFAULTS, used the first time Atlas runs.
+
+   Once a user adds, renames, reorders or deletes a section or shortcut,
+   their own layout is saved to chrome.storage.local and used instead —
+   editing this list afterwards will not overwrite what they have saved.
+   (Clearing the saved layout via "Reset to defaults" brings these back.)
+
+   Each workspace holds a set of compact cards ("sections").
    A shortcut is simply:  { name, url, icon }
    "icon" is a key from the ICONS list above (or a direct path). */
-const WORKSPACES = [
+const DEFAULT_WORKSPACES = [
   {
     id: "personal",
     name: "Personal",
@@ -172,8 +179,23 @@ const SEARCH_URL = "https://www.google.com/search?q=";
    Your endpoint receives:  POST { messages: [{role, content}, ...] }
    and should reply with JSON: { reply: "..." }                    */
 const AI_CONFIG = {
-  endpoint: "http://localhost:3000/api/chat",// <-- leave empty to keep the assistant disabled
-  greeting: "Hi. Ask me anything once an assistant endpoint is connected.",
+  /* the Gemini bridge in server/ — deployed on Vercel, so it works for anyone
+     who installs the extension. After deploying (see server/README.md) put
+     your Vercel URL here, e.g. "https://atlas-assistant.vercel.app/api/chat".
+     For local testing use "http://localhost:3001/api/chat" + npm run assistant. */
+  endpoint: "http://localhost:3001/api/chat", // <-- replace with your Vercel URL; empty disables the assistant
+  greeting: "Hi, I'm Atlas. Ask me anything.",
   notConfigured:
     "The assistant isn't connected yet. Add your endpoint URL in config.js (AI_CONFIG.endpoint) to enable replies.",
+};
+
+/* ---------- 6. WEATHER -----------------------------------------
+   Shown next to the clock, from the free Open-Meteo service (no key).
+   By default it uses your current location (Chrome asks once). Click the
+   weather card on the new tab to type a city instead.
+   units: "celsius" or "fahrenheit"
+   city:  optional fixed city name, e.g. "Karachi" — overrides location */
+const WEATHER_CONFIG = {
+  units: "celsius",
+  city: "",
 };
