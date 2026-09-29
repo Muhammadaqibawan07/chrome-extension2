@@ -16,6 +16,8 @@
         it, and its right-click opens these settings.
      ❝  Daily quote — settings.widgets.quote + quotes (quote.js shows it)
      ◷  Focus — the focus timer (focus.js draws the view)
+     ▦  Calendar — the Google Calendar agenda (calendar.js, Pro)
+     ✦  Day planner — the AI plan for today (planner.js, Pro)
    Notes and goals live in "qt:tasks"; habits (a third tab there) in
    "qt:habits".                                                           */
 
@@ -73,6 +75,8 @@
     puzzle: '<path d="M9 4.5h3a1.5 1.5 0 0 1 3 0h3.5V9a1.5 1.5 0 0 1 0 3v6.5H14a1.5 1.5 0 0 0-3 0H5.5V14a1.5 1.5 0 0 0 0-3V4.5z"/>',
     list: '<path d="M9 7h11M9 12h11M9 17h11"/><circle cx="4.8" cy="7" r=".6"/><circle cx="4.8" cy="12" r=".6"/><circle cx="4.8" cy="17" r=".6"/>',
     heart: '<path d="M12 19.5s-7-4.3-7-9.5a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.2-7 9.5-7 9.5z"/>',
+    calendar: '<rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/><path d="M8 14h2M12 14h4M8 17h4"/>',
+    planner: '<path d="M4.5 6.5h7M4.5 12h5M4.5 17.5h7"/><path d="M17 4.5l1.1 3.4 3.4 1.1-3.4 1.1L17 13.5l-1.1-3.4-3.4-1.1 3.4-1.1z"/>',
     share: '<circle cx="17.5" cy="6" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><circle cx="17.5" cy="18" r="2.5"/><path d="m8.7 10.8 6.6-3.6M8.7 13.2l6.6 3.6"/>',
   };
 
@@ -111,9 +115,13 @@
     faq: ["FAQs", () => renderFaq()],
     changelog: ["Changelog", () => renderChangelog()],
     focus: ["Focus", () => window.AtlasFocus && AtlasFocus.render({ body: P.body, sub: P.sub, switchRow, section, show })],
+    calendar: ["Calendar", () => window.AtlasCalendar && AtlasCalendar.render({ body: P.body, sub: P.sub, section, show, upgradeNote })],
+    planner: ["Day planner", () => window.AtlasPlanner && AtlasPlanner.render({ body: P.body, sub: P.sub, section, show, upgradeNote })],
   };
+  /* the views drawn by other files, told when they stop being shown */
+  const detachViews = () => [window.AtlasFocus, window.AtlasCalendar, window.AtlasPlanner].forEach((m) => m && m.detach());
   function show(v) {
-    if (window.AtlasFocus) AtlasFocus.detach();
+    detachViews();
     view = VIEWS[v] ? v : "home";
     const [title, render] = VIEWS[view];
     P.panel.setAttribute("aria-label", title);
@@ -134,7 +142,7 @@
   function closeAll(except) {
     if (except !== P.panel) {
       P.panel.hidden = true;
-      if (window.AtlasFocus) AtlasFocus.detach();
+      detachViews();
       toolsBtn.classList.remove("is-open");
       toolsBtn.setAttribute("aria-expanded", "false");
     }
@@ -201,6 +209,8 @@
     const F = window.AtlasFocus;
     P.body.append(h("div", { class: "qt-grid" },
       F ? tile(I.zen, "Focus", F.tile(), () => show("focus"), F.isRunning() ? "is-on" : "") : null,
+      window.AtlasPlanner ? tile(I.planner, "Day planner", AtlasPlanner.tile(), () => show("planner"), AtlasPlanner.current().now ? "is-on" : "") : null,
+      window.AtlasCalendar ? tile(I.calendar, "Calendar", AtlasCalendar.tile(), () => show("calendar")) : null,
       window.AtlasStats ? tile(I.chart, "Stats", "Your time and progress", () => { closeAll(); AtlasStats.open(); }) : null,
       tile(I.tasks, "Notes & Goals", tasks.length ? done + " of " + tasks.length + " done" + (dueN ? " · " + dueN + " due" : "") : "Plan and track", () => show("tasks")),
       hasTabs ? tile(I.bolt, "Optimize", AS.get().optimize.auto ? "Auto optimize on" : "Tidy your tabs", () => show("optimize")) : null,
@@ -1398,6 +1408,7 @@
     if (view === "focus" && el && P.panel.contains(el) && /^(INPUT|SELECT)$/.test(el.tagName)) return;
     show(view);
   });
+  if (window.AtlasCalendar) AtlasCalendar.on(() => { if (!P.panel.hidden && view === "home") show("home"); });
   if (window.AtlasMinimal) AtlasMinimal.on(() => { if (!P.panel.hidden && (view === "home" || view === "minimal")) show(view); });
 
   window.AtlasQuickTools = {
@@ -1407,6 +1418,15 @@
     habits: () => habitsReady.then(() => habits),
     upgradeNote,
     footer,
+    /* for the Day planner's Complete button */
+    isTaskDone: (id) => allTasks().some((t) => t.id === id && t.done),
+    completeTask: (id) => ready.then(() => {
+      const t = allTasks().find((x) => x.id === id);
+      if (!t || t.done) return;
+      t.done = true;
+      t.doneAt = Date.now();
+      return save();
+    }),
     /* the same notes, for Customize > Notes */
     notes: {
       ready,

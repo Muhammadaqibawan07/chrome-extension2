@@ -47,6 +47,7 @@ After changing `schema.prisma`, run `npm run db:migrate -- --name what_changed`.
 - For `chrome.identity.getAuthToken`, choose the "Chrome Extension" type and enter your extension ID.
 - For `launchWebAuthFlow`, choose the "Web application" type.
 - Put the client ID(s) in `GOOGLE_CLIENT_IDS`.
+- For the Calendar agenda, go to APIs & Services → Library and enable the **Google Calendar API**. Then add the scope `.../auth/calendar.readonly` on the OAuth consent screen. It is a "sensitive" scope. Until Google verifies the app, only the test users listed on the consent screen can connect a calendar. The extension calls the Calendar API itself, so the backend needs no calendar setup.
 
 **Paddle.** Start in the sandbox at sandbox-vendors.paddle.com.
 
@@ -88,6 +89,7 @@ Send `Authorization: Bearer <accessToken>` on every route marked 🔒.
 | GET 🔒 | `/me` | → `{ user, usage: { ai } }` |
 | DELETE 🔒 | `/me` | → 204 (only after the subscription is cancelled) |
 | POST 🔒 | `/ai/chat` | `{ messages: [{ role, content }] }` → `{ reply, usage }` |
+| POST 🔒 Pro | `/ai/plan` | `{ date, from, to, focus, tasks, events, reminders, habits, note }` → `{ plan: { summary, blocks, unplanned }, usage }`. Counts as one assistant message. See `services/planner.js` |
 | GET 🔒 | `/ai/usage` | → `{ used, limit, remaining }` |
 | GET 🔒 | `/settings` | → `{ data, updatedAt }` |
 | PUT 🔒 | `/settings` | `{ data: {...} }` → `{ data, updatedAt }` |
@@ -135,6 +137,8 @@ To lock a route to Pro users, add `requirePro` after `requireAuth` (see `src/mid
 | Automatic sync | Manual save and restore only | Everything, automatically (`/sync`) |
 | Habits | 3 | 30 |
 | Focus timer | ✓ | ✓ |
+| Google Calendar agenda | – | ✓ |
+| AI day planner | – | ✓ (one assistant message per plan) |
 | Assistant messages a day | `AI_DAILY_LIMIT_FREE` | `AI_DAILY_LIMIT_PRO` |
 
 Change the free limits on the extension side in `PRO_CONFIG` (`extension/config.js`).

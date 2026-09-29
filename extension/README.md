@@ -184,6 +184,48 @@ private space arrive from another computer, a fresh tab reloads itself and
 an older one offers **Reload**. The manual **Save / Restore** buttons are
 still there for free accounts.
 
+## Calendar agenda (Pro)
+Quick tools → **Calendar** (`calendar.js`) shows today and the next 7 days
+from every calendar that is ticked in Google Calendar. Declined events are
+left out. An event opens in Google Calendar when you click it, and a Meet
+event shows a Join button. Signing in with Google also asks for read-only
+calendar access (`calendar.readonly`), so it's one Google screen, and
+`account.js` hands the token to `calendar.js` (`adopt`). If the user
+unticks the calendar box, or signed in before this existed, the view first
+tries to connect silently. If that fails, it shows **Connect Google
+Calendar** (`AtlasAccount.googleToken`). Signing out forgets the calendar
+on this computer.
+
+The extension fetches events straight from Google, so they never pass
+through the Atlas server. They are cached in `cal:events` and fetched again
+when the cache is more than 10 minutes old. Google's token lasts an hour and
+is renewed without opening a window. If Google wants the user to confirm
+again, the view shows **Reconnect**.
+
+## Day planner (Pro)
+Quick tools → **Day planner** (`planner.js`, or "Plan my day" in the
+Command Center) sends today's inputs to the backend's `/ai/plan`. The inputs
+are:
+- open tasks from Notes & Goals (overdue, due today, or undated)
+- Calendar events
+- reminders
+- habits still to do today
+- the focus-timer lengths and an optional note
+
+Gemini returns a timeline for the chosen window: fixed events, focus blocks
+for tasks, breaks, habits, and the tasks that didn't fit. Each plan uses one
+assistant message, and the planner needs an Atlas account.
+
+On the timeline:
+- The current block is highlighted.
+- **Start focus** starts the focus timer, and **Complete** ticks the task
+  off in Notes & Goals.
+- **Remind me when each block starts** writes a reminder for each block
+  still to come. These are tagged `fromPlan`, and the next plan replaces
+  them.
+
+The plan is kept in `planner:day` until the day ends.
+
 ## Premium wallpapers (Pro)
 Customize → Background → **Premium library** (`premium.js`). The list
 comes from the backend (`backend/src/data/wallpapers.js`, files on
