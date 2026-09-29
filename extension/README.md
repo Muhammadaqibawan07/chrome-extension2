@@ -226,19 +226,24 @@ On the timeline:
 
 The plan is kept in `planner:day` until the day ends.
 
-## Premium wallpapers (Pro)
-Customize → Background → **Premium library** (`premium.js`). The list
-comes from the backend (`backend/src/data/wallpapers.js`, files on
-`WALLPAPER_CDN`). Everyone sees the thumbnails, but only Pro gets the video
-links. Unlocked wallpapers join `WALLPAPERS` with ids starting `p-`, so the
-schedule, the menus and "next wallpaper" all include them. The bundled
-wallpapers in `config.js` stay free.
+## Online wallpapers
+Customize → Background → **Online library** (`library.js`). Filter by
+All, 4K, Live, Anime or Nature, or search.
 
-**Change by itself** (Pro) picks a wallpaper that fits the time of day
-(morning, day, evening, night) or the weather card's weather (clear,
-cloudy, rain, snow, fog, storm). It uses each wallpaper's `tags`, and you
-can add tags to your own in `config.js`. It changes when the period
-changes, and a wallpaper you pick by hand holds until then.
+- **Stills** come from the Wallhaven API (SFW only). The extension calls it
+  directly and needs no key.
+- **Live videos** come from Pexels Videos, searched through the backend
+  (`GET /wallpapers/live`) so the API key stays on the server. Everyone sees
+  the thumbnails, but only Pro gets the video links.
+
+The ☆ on a card saves it to **Favourites** (`wp:favs`, synced with the
+account). Favourites get their own chip at the front of the row and come
+first in **All**.
+
+Files are shown straight from Wallhaven and Pexels, never copied or
+re-hosted. The pick is saved in `settings.background.online` (mode
+`online`). Customize credits the Pexels creator of the video on screen.
+The bundled wallpapers in `config.js` stay free.
 
 ## Daily quote
 A quote above the search bar (`quote.js`) from a built-in list (Motivation,

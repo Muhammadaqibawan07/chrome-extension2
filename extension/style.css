@@ -54,7 +54,21 @@ html, body {
 }
 
 /* ---------- wallpaper ---------- */
-.wallpaper { position: fixed; inset: 0; z-index: 0; background: #14141a; }
+.wallpaper { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #14141a; }
+
+/* each layer sits in a slot. The incoming one is raised on top (.is-top)
+   and settles in from a slight zoom while it fades in (app.js), so the old
+   one stays underneath until it's covered. Images sit above videos. */
+.wp-slot { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+.wp-slot.is-top { z-index: 1; }
+.wp-slot.is-img { z-index: 2; }
+.wp-slot.is-img.is-top { z-index: 3; }
+.wp-slot.is-entering { animation: wp-settle 1600ms cubic-bezier(0.22, 0.8, 0.24, 1) both; }
+.wp-slot.is-entering > .is-active { transition-duration: 1100ms; }
+@keyframes wp-settle {
+  from { transform: scale(1.06); }
+  to { transform: none; }
+}
 
 .wp-layer {
   position: absolute;
@@ -82,7 +96,35 @@ html, body {
   pointer-events: none;
   transition: opacity 900ms var(--ease);
 }
-.wp-image { object-fit: cover; object-position: center; }
+.wp-image {
+  object-fit: cover;
+  object-position: center;
+  transition: opacity 900ms var(--ease), filter 1000ms var(--ease), scale 1000ms var(--ease);
+}
+/* the small preview of an online image, until the full one sharpens it */
+.wp-image.is-preview { filter: blur(22px) saturate(1.15); scale: 1.08; }
+.wp-fill { z-index: 4; }
+
+/* a thin line of light along the top while a wallpaper is on its way */
+.wallpaper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 7;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.95), transparent) no-repeat;
+  background-size: 35% 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms var(--ease);
+}
+.wallpaper.is-loading::before { opacity: 1; animation: wp-loading 1.3s ease-in-out infinite; }
+@keyframes wp-loading {
+  from { background-position: -60% 0; }
+  to { background-position: 160% 0; }
+}
 .wp-image.is-active,
 .wp-fill.is-active { opacity: 1; }
 
@@ -91,6 +133,7 @@ html, body {
 .wp-veil {
   position: absolute;
   inset: 0;
+  z-index: 5;
   background-image: linear-gradient(
     180deg,
     rgba(0, 0, 0, 0.2) 0%,
@@ -3418,6 +3461,7 @@ body.zen-solo > :not(.zen):not(.zen-ui):not(.wallpaper):not(script) { visibility
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 6;
   background: #000;
   opacity: max(var(--min-dim, 0), var(--focus-dim, 0));
   pointer-events: none;
@@ -4102,8 +4146,102 @@ a.qt-cal-ev[href]:hover { background: rgba(255, 255, 255, 0.08); }
 .cz-pwp.is-locked img { filter: saturate(0.7) brightness(0.8); }
 .cz-pwp-name { position: absolute; left: 8px; right: 8px; bottom: 6px; z-index: 1; overflow: hidden; font-size: 11.5px; font-weight: 600; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .cz-pwp-new { position: absolute; top: 6px; left: 6px; z-index: 1; padding: 1px 6px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.cz-pwp-lock { position: absolute; top: 5px; right: 6px; z-index: 1; font-size: 12px; }
+.cz-pwp-lock { position: absolute; top: 7px; right: 36px; z-index: 1; font-size: 12px; }
+.cz-pwp:focus-within { border-color: var(--line-hi); }
+/* the whole card picks; the star sits above it */
+.cz-pwp-hit { position: absolute; inset: 0; z-index: 3; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.cz-pwp-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: inherit; }
+.cz-pwp-fav {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(10, 10, 14, 0.45);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 200ms var(--ease), transform 200ms var(--ease), background 200ms var(--ease), color 200ms var(--ease);
+}
+.cz-pwp:hover .cz-pwp-fav,
+.cz-pwp-fav:focus-visible,
+.cz-pwp.is-fav .cz-pwp-fav { opacity: 1; transform: none; }
+.cz-pwp-fav:hover { background: rgba(10, 10, 14, 0.7); }
+.cz-pwp.is-fav .cz-pwp-fav { border-color: transparent; background: var(--accent); color: var(--on-accent); }
+.cz-pwp-fav.is-pop { animation: cz-fav-pop 420ms cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes cz-fav-pop {
+  0% { transform: scale(0.7); }
+  55% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
 .cz-pwp-msg:empty { display: none; }
+.cz-pwp { transition: border-color 240ms var(--ease), box-shadow 240ms var(--ease), transform 240ms var(--ease); }
+.cz-pwp:active { transform: scale(0.97); }
+/* the picked card spins until its wallpaper is on screen (app.js) */
+.cz-pwp.is-loading::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: cz-spin 700ms linear infinite;
+}
+.cz-pwp.is-loading img { filter: brightness(0.6); }
+@keyframes cz-spin { to { transform: rotate(360deg); } }
+
+/* the online library's filters (library.js), same look as .cz-seg */
+/* one row that scrolls sideways, fading out at the edges */
+.cz-lib-chips {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  margin: 0 -2px 8px;
+  padding: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  --fade-l: 18px;
+  --fade-r: 26px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+}
+.cz-lib-chips.at-start { --fade-l: 0px; }
+.cz-lib-chips.at-end { --fade-r: 0px; }
+.cz-lib-chips::-webkit-scrollbar { display: none; }
+.cz-lib-chip {
+  flex: none;
+  white-space: nowrap;
+  transition: color 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink-faint);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.cz-lib-chip:hover { color: var(--ink); }
+.cz-lib-chip.is-on { border-color: transparent; background: rgba(var(--accent-rgb), 0.28); color: var(--ink); }
+.cz-lib-chips + .cz-text { margin-bottom: 10px; }
+.cz-group .cz-note a { color: var(--accent); }
 
 /* writing a quote right on the new tab (quote.js) */
 .quote.is-adding .quote-tools { opacity: 1; }

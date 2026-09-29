@@ -62,10 +62,11 @@ After changing `schema.prisma`, run `npm run db:migrate -- --name what_changed`.
 - Put the key in `RESEND_API_KEY`, and a sender on that domain in `EMAIL_FROM`.
 - Set `CRON_SECRET` to a long random string. Vercel Cron sends it to `/cron/weekly-email` every Monday at 08:00 UTC (see `vercel.json`).
 
-**Premium wallpapers.** Put the videos and thumbnails in a public CDN folder (for example Cloudflare R2, Bunny or S3) and set `WALLPAPER_CDN` to that folder's URL.
+**Online wallpapers.** Each source is switched on in `.env`, and the extension only shows the ones that are on (`GET /wallpapers/sources`).
 
-- The list is `src/data/wallpapers.js`. To add a wallpaper, upload its files, add one entry, and deploy.
-- Extensions pick up the new list within a day.
+- `PEXELS=true` turns on live videos. Get a free key at pexels.com/api and put it in `PEXELS_API_KEY`. The key stays on the server: the extension searches through `GET /wallpapers/live`, and the videos play straight from Pexels.
+- `WALLHAVEN=true` turns on still 4K images. `WALLHAVEN_URL` is the search API (`https://wallhaven.cc/api/v1/search`). The extension calls it itself, SFW only, with no key, so Wallhaven's rate limit counts per user rather than against this server.
+- Nothing is copied or cached here. The extension names the Pexels creator and links to the video, as the Pexels API terms ask.
 
 ## Deploy to Vercel
 
@@ -99,7 +100,8 @@ Send `Authorization: Bearer <accessToken>` on every route marked 🔒.
 | PUT 🔒 | `/stats/prefs` | `{ weeklyEmail }` → `{ weeklyEmail }`. Turning it on needs Pro. |
 | PUT 🔒 Pro | `/stats/week` | `{ weeks: [{ week: "YYYY-MM-DD" (a Monday), data }] }` → `{ ok }` |
 | GET | `/cron/weekly-email` | Vercel Cron only (`Bearer $CRON_SECRET`). Emails last week's summary. |
-| GET | `/wallpapers` | → `{ items: [{ id, label, category, tags, thumb, added, video }], pro }`. `video` is only filled in for Pro. |
+| GET | `/wallpapers/sources` | → `{ pexels, wallhaven }`: whether Pexels is on, and the Wallhaven search URL (or `null` when off). |
+| GET | `/wallpapers/live?q=&page=` | Pexels video search (no `q` = popular) → `{ items: [{ id, thumb, video, width, height, duration, credit, creditUrl, link }], page, more, pro }`. `video` is only filled in for Pro. |
 | GET | `/billing/config` | → `{ environment, clientToken, prices }` |
 | POST 🔒 | `/billing/checkout` | `{ interval: "month" \| "year" }` → `{ url }` (open it in a new tab) |
 | POST 🔒 | `/billing/portal` | → `{ url }` (the page for cancelling or updating the card) |
@@ -131,8 +133,8 @@ To lock a route to Pro users, add `requirePro` after `requireAuth` (see `src/mid
 
 | Feature | Free | Pro |
 |---|---|---|
-| Premium 4K wallpaper library | Thumbnails only | Every wallpaper, plus new ones as they're added |
-| Wallpaper changes by time of day or weather | – | ✓ |
+| Online wallpapers: 4K stills (Wallhaven) | ✓ | ✓ |
+| Online wallpapers: live videos (Pexels) | Thumbnails only | ✓ |
 | Stats dashboard | Today | 7 and 30 days, plus the Monday email |
 | Automatic sync | Manual save and restore only | Everything, automatically (`/sync`) |
 | Habits | 3 | 30 |
