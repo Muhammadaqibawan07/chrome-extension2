@@ -1447,6 +1447,8 @@
       if (btn.isConnected) { btn.disabled = false; btn.textContent = was; }
     }
   }
+  /* Google's popup opens over the panel, no bigger than it */
+  const signInHere = () => Acc.signIn({ anchor: panel.getBoundingClientRect() });
   const accMsg = () => h("p", { class: "cz-msg", hidden: true });
   const say = (msg, text) => { msg.textContent = text; msg.classList.remove("is-error"); msg.hidden = false; };
 
@@ -1465,7 +1467,7 @@
       const msg = accMsg();
       const btn = h("button", {
         type: "button", class: "cz-btn cz-google",
-        onclick: () => accBusy(btn, "Signing in…", msg, () => Acc.signIn()),
+        onclick: () => accBusy(btn, "Signing in…", msg, () => signInHere()),
       });
       btn.innerHTML = GOOGLE_G;
       btn.append(" Sign in with Google");
@@ -1496,7 +1498,7 @@
       type: "button", class: "cz-btn", text: "Switch account",
       onclick: () => accBusy(switchBtn, "Opening Google…", gMsg, async () => {
         const before = Acc.user();
-        try { await Acc.signIn(); } catch (err) {
+        try { await signInHere(); } catch (err) {
           /* cancelled: stay signed in as before */
           if (before) return say(gMsg, "Still signed in as " + before.email + ".");
           throw err;
@@ -2334,10 +2336,44 @@
       replace(next);
     },
   });
+  /* top of the panel: Sign in with Google, or who is signed in (opens
+     the Account tab) */
+  const headAcc = h("div", { class: "cz-head-acc" });
+  function paintHeadAcc() {
+    headAcc.textContent = "";
+    headAcc.hidden = !Acc || !Acc.configured();
+    if (headAcc.hidden) return;
+    const user = Acc.user();
+    if (!user) {
+      const btn = h("button", {
+        type: "button", class: "cz-head-google", title: "Sign in with Google",
+        onclick: async () => {
+          btn.disabled = true;
+          try { await signInHere(); } catch { switchTab("account"); } finally { if (btn.isConnected) btn.disabled = false; }
+        },
+      });
+      btn.innerHTML = GOOGLE_G;
+      btn.append(h("span", { text: "Sign in with Google" }));
+      headAcc.append(btn);
+      return;
+    }
+    const name = user.name || user.email || "";
+    headAcc.append(h("button", {
+      type: "button", class: "cz-head-user", title: user.email || name, translate: "no",
+      onclick: () => switchTab("account"),
+    },
+      user.avatarUrl
+        ? h("img", { class: "cz-head-av", src: user.avatarUrl, alt: "", referrerpolicy: "no-referrer" })
+        : h("span", { class: "cz-head-av", "aria-hidden": "true", text: (name || "?")[0].toUpperCase() }),
+      h("span", { class: "cz-head-name", text: name.split(" ")[0] })));
+  }
+
   const panel = h("aside", { class: "cz", id: "cz", role: "dialog", "aria-label": "Customize", hidden: true },
     h("div", { class: "cz-head" },
       h("span", { class: "cz-title", text: "Customize" }),
-      h("button", { type: "button", class: "cz-x", "aria-label": "Close", text: "✕", onclick: () => close() })),
+      h("div", { class: "cz-head-end" },
+        headAcc,
+        h("button", { type: "button", class: "cz-x", "aria-label": "Close", text: "✕", onclick: () => close() }))),
     tabsEl,
     body,
     h("div", { class: "cz-foot" },
@@ -2400,6 +2436,9 @@
     conds = [];
     body.textContent = "";
     body.append(...tab.render());
+    /* feedback, rate, share and the about links, under every tab */
+    const QT = window.AtlasQuickTools;
+    if (QT && QT.footer) body.append(h("div", { class: "cz-about" }, QT.footer(() => close())));
     Array.from(body.children).forEach((c, i) => c.style.setProperty("--k", Math.min(i, 10)));
     body.scrollTop = scroll;
     resetBtn.hidden = !tab.reset;
@@ -2488,7 +2527,11 @@
   /* the Background tab follows the premium library as it loads */
   if (window.AtlasPremium) AtlasPremium.on(() => { if (isOpen() && activeTab === "background") renderTab(); });
   /* the Account tab follows sign-in and sign-out, from any tab */
-  if (Acc) Acc.on(() => { if (isOpen() && activeTab === "account") renderTab(); });
+  if (Acc) {
+    Acc.on(() => { paintHeadAcc(); if (isOpen() && activeTab === "account") renderTab(); });
+    if (Acc.ready) Promise.resolve(Acc.ready).then(paintHeadAcc, paintHeadAcc);
+  }
+  paintHeadAcc();
 
   /* ================= PUBLIC API ========================================== */
   /* filled in by app.js: setWallpaper, currentWallpaper, and for the

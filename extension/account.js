@@ -1,7 +1,8 @@
 /* ATLAS NEW TAB — account
    Sign in with Google, through the backend in backend/ (ACCOUNT_CONFIG in
-   config.js). Google's sign-in page opens in a popup
-   (chrome.identity.launchWebAuthFlow) and hands back an ID token; the
+   config.js). Google's sign-in page opens in a small popup window of our
+   own, laid over the Customize panel (launchWebAuthFlow can't be sized),
+   and hands back an ID token; the
    backend checks it and answers with its own session:
    { accessToken (short-lived), refreshToken (rotates on each use), user }.
 
@@ -114,20 +115,58 @@
     } catch { return null; }
   }
 
-  async function signIn() {
+  /* Google's page in a popup the size of `anchor` (a DOMRect on this page,
+     e.g. the Customize panel) and on top of it. Resolves with the redirect
+     URL once Google sends the window there; rejects if it is closed. */
+  function authWindow(url, redirect, anchor) {
+    return new Promise((resolve, reject) => {
+      const frameX = Math.max(0, window.outerWidth - window.innerWidth);
+      const frameY = Math.max(0, window.outerHeight - window.innerHeight);
+      const width = Math.round(Math.max(380, Math.min(460, anchor ? anchor.width : 420)));
+      const height = Math.round(Math.max(480, Math.min(620, anchor ? anchor.height : 600)));
+      const left = anchor ? window.screenX + frameX + anchor.left + (anchor.width - width) / 2 : window.screenX + (window.outerWidth - width) / 2;
+      const top = anchor ? window.screenY + frameY + anchor.top + Math.max(0, (anchor.height - height) / 2) : window.screenY + (window.outerHeight - height) / 2;
+      chrome.windows.create({ url, type: "popup", focused: true, width, height, left: Math.round(left), top: Math.round(top) }, (win) => {
+        if (chrome.runtime.lastError || !win) return reject(new Error(chrome.runtime.lastError ? chrome.runtime.lastError.message : "no window"));
+        const tabId = win.tabs && win.tabs[0] ? win.tabs[0].id : null;
+        let done = false;
+        const finish = (err, back) => {
+          if (done) return;
+          done = true;
+          chrome.tabs.onUpdated.removeListener(onUpdated);
+          chrome.windows.onRemoved.removeListener(onRemoved);
+          if (back) chrome.windows.remove(win.id, () => void chrome.runtime.lastError);
+          if (err) reject(err); else resolve(back);
+        };
+        const onUpdated = (id, info, tab) => {
+          if (tabId !== null && id !== tabId) return;
+          const u = info.url || (tab && (tab.pendingUrl || tab.url)) || "";
+          if (u.startsWith(redirect)) finish(null, u);
+        };
+        const onRemoved = (id) => { if (id === win.id) finish(new Error("The user closed the window.")); };
+        chrome.tabs.onUpdated.addListener(onUpdated);
+        chrome.windows.onRemoved.addListener(onRemoved);
+      });
+    });
+  }
+
+  async function signIn(opts) {
     if (!configured()) throw new ApiError("Sign-in isn't set up yet (ACCOUNT_CONFIG in config.js).", 0, "not_configured");
     const nonce = crypto.randomUUID();
+    const redirect = chrome.identity.getRedirectURL();
     const url = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
       client_id: CLIENT_ID,
       response_type: "id_token",
-      redirect_uri: chrome.identity.getRedirectURL(),
+      redirect_uri: redirect,
       scope: "openid email profile",
       nonce,
       prompt: "select_account", // always ask which Google account
     });
     let back;
     try {
-      back = await chrome.identity.launchWebAuthFlow({ url, interactive: true });
+      back = chrome.windows && chrome.tabs && chrome.tabs.onUpdated
+        ? await authWindow(url, redirect, opts && opts.anchor)
+        : await chrome.identity.launchWebAuthFlow({ url, interactive: true });
     } catch (err) {
       const msg = String(err && err.message || err);
       throw new ApiError(/cancel|closed|did not approve/i.test(msg) ? "Sign-in was cancelled." : "Google sign-in failed: " + msg, 0, "cancelled");
