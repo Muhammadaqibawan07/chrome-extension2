@@ -185,7 +185,7 @@ const AI_CONFIG = {
      who installs the extension. After deploying (see server/README.md) put
      your Vercel URL here, e.g. "https://atlas-assistant.vercel.app/api/chat".
      For local testing use "http://localhost:3001/api/chat" + npm run assistant. */
-  endpoint: "https://atlas-assistant-nine.vercel.app/api/chat", // <-- empty disables the assistant
+  endpoint: "https://atlas-assistant-backend.vercel.app/api/chat", // <-- empty disables the assistant
   greeting: "Hi, I'm Atlas. Ask me anything.",
   notConfigured:
     "The assistant isn't connected yet. Add your endpoint URL in config.js (AI_CONFIG.endpoint) to enable replies.",
@@ -202,7 +202,7 @@ const AI_CONFIG = {
                    in the backend's GOOGLE_CLIENT_IDS.
    Empty values hide sign-in and show a setup note instead.        */
 const ACCOUNT_CONFIG = {
-  api: "http://localhost:3001",
+  api: "https://atlas-assistant-backend.vercel.app",
   googleClientId: "382599280686-8ge2r7238h93jum0gfeocffldnoean85.apps.googleusercontent.com",
 };
 
