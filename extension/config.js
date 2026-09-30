@@ -6,7 +6,9 @@
 /* ---------- 1. WALLPAPERS -------------------------------------
    Drop your own .mp4 files into  extension/wallpapers/
    Keep the same filenames and nothing else needs to change.
-   To add more wallpapers, just append an entry to this list. */
+   To add more wallpapers, just append an entry to this list.
+   These are free for everyone. The online library (Wallhaven stills,
+   Pexels live videos) is in library.js. */
 const WALLPAPERS = [
   { id: "w1", label: "Wallpaper 01", file: "wallpapers/wallpaper-1.mp4" },
   { id: "w2", label: "Wallpaper 02", file: "wallpapers/wallpaper-2.mp4" },
@@ -183,10 +185,54 @@ const AI_CONFIG = {
      who installs the extension. After deploying (see server/README.md) put
      your Vercel URL here, e.g. "https://atlas-assistant.vercel.app/api/chat".
      For local testing use "http://localhost:3001/api/chat" + npm run assistant. */
-  endpoint: "http://localhost:3001/api/chat", // <-- replace with your Vercel URL; empty disables the assistant
+  endpoint: "https://atlas-assistant-nine.vercel.app/api/chat", // <-- empty disables the assistant
   greeting: "Hi, I'm Atlas. Ask me anything.",
   notConfigured:
     "The assistant isn't connected yet. Add your endpoint URL in config.js (AI_CONFIG.endpoint) to enable replies.",
+};
+
+/* ---------- 5b. ACCOUNT ----------------------------------------
+   Sign in with Google (Customize > Account), through the backend in
+   backend/ (see backend/README.md).
+   api:            the backend's URL, no trailing slash — your Vercel URL
+                   once deployed, or http://localhost:3001 for npm run dev
+   googleClientId: a "Web application" OAuth client from Google Cloud
+                   Console. Add https://<extension-id>.chromiumapp.org/
+                   under "Authorized redirect URIs", and put the same ID
+                   in the backend's GOOGLE_CLIENT_IDS.
+   Empty values hide sign-in and show a setup note instead.        */
+const ACCOUNT_CONFIG = {
+  api: "http://localhost:3001",
+  googleClientId: "382599280686-8ge2r7238h93jum0gfeocffldnoean85.apps.googleusercontent.com",
+};
+
+/* ---------- 5c. ATLAS PRO --------------------------------------
+   What a free account can use; Pro (the $5 plan) lifts these. The
+   backend re-checks every Pro call, so these only shape the screens.
+   freeHabits:    habits a free account can track
+   freeStatsDays: days of the stats dashboard a free account sees
+                  (1 = today only; Pro sees 30 days and the weekly email)
+   freeSessions:  tab sessions a free account can save (Quick tools →
+                  Tab manager)
+   allFree:       true = every Pro feature is open to everyone, signed in
+                  or not, and nothing offers an upgrade (the backend has the
+                  same switch, ALL_FREE). false brings the Pro plan back. */
+const PRO_CONFIG = {
+  allFree: true,
+  freeHabits: 3,
+  freeStatsDays: 1,
+  freeSessions: 3,
+};
+
+/* ---------- 5d. ABOUT ------------------------------------------
+   The footer of Quick tools: Feedback, Rate us, Share and the links.
+   storeUrl:   the Chrome Web Store page; "" = worked out from the
+               extension's id once it's published
+   privacyUrl: "" = the backend's /privacy.html (ACCOUNT_CONFIG.api)  */
+const ABOUT_CONFIG = {
+  feedbackEmail: "muhammadaqibawan07@gmail.com",
+  storeUrl: "",
+  privacyUrl: "",
 };
 
 /* ---------- 6. WEATHER -----------------------------------------
