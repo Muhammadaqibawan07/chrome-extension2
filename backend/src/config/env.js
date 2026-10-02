@@ -35,11 +35,16 @@ export const env = {
   cronSecret: process.env.CRON_SECRET || "",
 
   /* the online wallpaper sources (routes/wallpapers.routes.js), each on
-     or off: Pixabay (live videos, searched here with the key) and
+     or off: Pixabay (live videos, searched here with the key),
+     WallpaperWaves (live videos, its public WordPress API) and
      Wallhaven (still images, the extension calls WALLHAVEN_URL itself) */
   pixabay: {
     on: process.env.PIXABAY === "true",
     key: process.env.PIXABAY_API_KEY || "",
+  },
+  wallpaperwaves: {
+    on: process.env.WALLPAPERWAVES === "true",
+    url: (process.env.WALLPAPERWAVES_URL || "https://wallpaperwaves.com/wp-json/wp/v2").replace(/\/+$/, ""),
   },
   wallhaven: {
     on: process.env.WALLHAVEN === "true",
