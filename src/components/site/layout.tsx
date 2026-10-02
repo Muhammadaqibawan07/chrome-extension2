@@ -48,14 +48,8 @@ export function useTheme() {
 
 /* ---------- pieces ---------- */
 export function Mark({ size = 28 }: { size?: number }) {
-  /* the store icon's ring, drawn so it takes the theme colour */
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" className="shrink-0">
-      <rect width="32" height="32" rx="9" fill="rgb(var(--ink-rgb) / 0.94)" />
-      <circle cx="15.5" cy="17" r="7.6" fill="none" stroke="var(--a)" strokeWidth="2.6" />
-      <circle cx="24" cy="8.5" r="2" fill="#1a1712" />
-    </svg>
-  );
+  /* the Atlas "A" with its orbit, on the dark app tile */
+  return <img src="/media/logo-256.png" alt="" width={size} height={size} className="mark" style={{ width: size, height: size }} />;
 }
 
 export function InstallButton({ className = "", children }: { className?: string; children?: ReactNode }) {

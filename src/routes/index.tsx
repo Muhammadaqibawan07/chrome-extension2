@@ -1,7 +1,39 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Footer, InstallButton, Nav, Reveal, useTheme } from "@/components/site/layout";
-import { FALLBACK_PRICES, THEMES, fetchPlans, money } from "@/lib/site";
+import {
+  AppIcon,
+  Card,
+  CardCopy,
+  CalendarMock,
+  ChatMock,
+  CommandMock,
+  CursorMock,
+  FocusMock,
+  GoalsMock,
+  HabitMock,
+  I,
+  Icon,
+  LightMock,
+  NewTabMock,
+  PlannerMock,
+  PlayingMock,
+  QuoteMock,
+  RemindMock,
+  SearchMock,
+  StatsMock,
+  SyncMock,
+  TabsMock,
+  TranslateMock,
+  BlockMock,
+  VaultMock,
+  VoiceMock,
+  ZenMock,
+  hm,
+  useCycle,
+  useNow,
+} from "@/components/site/showcase";
+import { CONTACT_EMAIL, FALLBACK_PRICES, THEMES, fetchPlans, money } from "@/lib/site";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -10,12 +42,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Atlas replaces Chrome's new tab with live 4K wallpapers, glass shortcut cards, workspaces, quick tools and a quiet assistant. Free, with an optional Pro plan.",
+          "Atlas replaces Chrome's new tab with live 4K wallpapers, glass shortcut cards, a command center, focus timer, reminders, habits, a site blocker, translation and a quiet assistant. Free, with an optional Pro plan.",
       },
       { property: "og:title", content: "Atlas — a new tab worth opening" },
       {
         property: "og:description",
-        content: "Live wallpapers, shortcuts in glass cards, workspaces and quick tools for Chrome's new tab.",
+        content: "Live wallpapers, shortcuts in glass cards and twenty small tools for Chrome's new tab.",
       },
       { property: "og:image", content: "/media/shot-2.jpg" },
     ],
@@ -28,8 +60,13 @@ function Home() {
     <div className="site">
       <Nav />
       <Hero />
+      <WallStrip />
       <Shortcuts />
-      <Features />
+      <Numbers />
+      <Look />
+      <GetAround />
+      <GetDone />
+      <Control />
       <Themes />
       <Pricing />
       <Faq />
@@ -55,220 +92,469 @@ function Loop({ src, poster, className = "" }: { src: string; poster?: string; c
 
 /* ---------- hero ---------- */
 function Hero() {
+  const words = ["finally", "actually", "really"];
+  const w = useCycle(words.length, 2600);
   return (
     <section className="hero">
       <Loop src="/media/hero.mp4" poster="/media/hero.jpg" className="hero-video" />
       <div className="hero-shade" />
+      <div className="hero-glow" aria-hidden="true" />
       <div className="wrap hero-grid">
         <div className="hero-copy">
-          <p className="eyebrow rise" style={{ animationDelay: "60ms" }}>
-            For Chrome · Free to use
+          <p className="badge rise" style={{ animationDelay: "60ms" }}>
+            <span className="badge-dot" />
+            New · AI day planner, habits and focus stats
           </p>
           <h1 className="display rise" style={{ animationDelay: "120ms" }}>
             Your new tab,
             <br />
-            <em>finally</em> worth
+            <span className="swap">
+              <em key={w}>{words[w]}</em>
+            </span>{" "}
+            worth
             <br />
             opening.
           </h1>
           <p className="lede rise" style={{ animationDelay: "200ms" }}>
-            Atlas swaps Chrome's blank page for a live wallpaper, your sites in tidy glass cards, a proper search bar
-            and a handful of small tools you'll actually use. Set up in under a minute.
+            Live 4K wallpapers, your sites in glass cards, a command center, focus timer, reminders, habits, a site
+            blocker, translation and a quiet assistant. One new tab, twenty small tools.
           </p>
           <div className="hero-ctas rise" style={{ animationDelay: "280ms" }}>
             <InstallButton />
-            <a href="#features" className="btn btn-ghost">
-              Take a look inside
+            <a href="#look" className="btn btn-ghost">
+              See everything inside
+              <Icon d="M12 5v14M5 12l7 7 7-7" />
             </a>
           </div>
           <ul className="hero-facts rise" style={{ animationDelay: "360ms" }}>
             <li>Chrome, Edge &amp; Brave</li>
-            <li>No ads, no analytics</li>
+            <li>No ads, no tracking</li>
             <li>7 days of Pro free</li>
           </ul>
         </div>
         <figure className="hero-shot rise" style={{ animationDelay: "240ms" }}>
-          <BrowserFrame>
-            <img src="/media/shot-2.jpg" alt="Atlas new tab with shortcut cards over a live wallpaper" width={1280} height={800} />
-          </BrowserFrame>
+          <NewTabMock wall="meadow" />
         </figure>
       </div>
     </section>
   );
 }
 
-function BrowserFrame({ children }: { children: React.ReactNode }) {
+/* ---------- a moving strip of the live wallpapers ---------- */
+const WALLS = [
+  ["halo", "Halo"],
+  ["meadow", "Knight's rest"],
+  ["monolith", "Monolith"],
+  ["storm", "Storm rail"],
+  ["anime", "Glance"],
+  ["blade", "Quiet blade"],
+  ["roses", "Roses"],
+  ["spark", "Clash"],
+  ["crown", "Crown"],
+  ["wire", "Wire"],
+  ["cloak", "Cloak"],
+];
+
+function WallTile({ id, name }: { id: string; name: string }) {
+  const [hover, setHover] = useState(false);
   return (
-    <div className="frame">
-      <div className="frame-bar">
-        <i />
-        <i />
-        <i />
-        <span className="frame-url">New Tab</span>
-      </div>
-      <div className="frame-body">{children}</div>
-    </div>
+    <figure className="wall" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+      <img src={`/media/wp/${id}.jpg`} alt="" loading="lazy" />
+      {hover && <video src={`/media/wp/${id}.mp4`} muted loop playsInline autoPlay />}
+      <figcaption>
+        <span className="live-dot" />
+        {name}
+        <i>4K · Live</i>
+      </figcaption>
+    </figure>
   );
 }
 
-/* ---------- keyboard strip ---------- */
-function Shortcuts() {
-  const keys = [
-    { k: ["Ctrl", "Space"], t: "Command Center — every setting and tool, by name" },
-    { k: ["Z"], t: "Zen clock — just the time over your wallpaper" },
-    { k: ["M"], t: "Minimal — hide everything but search" },
-    { k: ["Right-click"], t: "Edit, move or remove any shortcut" },
-  ];
+function WallStrip() {
   return (
-    <section className="keys" aria-label="Keyboard shortcuts">
-      <div className="wrap keys-row">
-        {keys.map((x) => (
-          <div className="key-item" key={x.t}>
-            <span className="kbds">
-              {x.k.map((k) => (
-                <kbd key={k}>{k}</kbd>
-              ))}
-            </span>
-            <span>{x.t}</span>
-          </div>
+    <section className="walls" aria-label="Some of the live wallpapers">
+      <div className="walls-track">
+        {[...WALLS, ...WALLS].map(([id, name], k) => (
+          <WallTile key={k} id={id} name={name} />
         ))}
       </div>
     </section>
   );
 }
 
-/* ---------- features (bento) ---------- */
-function Features() {
+/* ---------- keyboard strip ---------- */
+function Shortcuts() {
+  const keys = [
+    { k: ["Ctrl", "Space"], t: "Command Center: every setting and tool, by name" },
+    { k: ["Z"], t: "Zen clock: just the time over your wallpaper" },
+    { k: ["M"], t: "Minimal: hide everything but search" },
+    { k: ["!yt", "!gh", "!w"], t: "Search YouTube, GitHub or Wikipedia from the bar" },
+  ];
   return (
-    <section id="features" className="section">
-      <div className="wrap">
-        <Reveal className="section-head">
-          <p className="eyebrow">What's inside</p>
-          <h2 className="h2">
-            Everything a new tab should do,
-            <br />
-            <em>and nothing it shouldn't.</em>
-          </h2>
-        </Reveal>
-
-        <div className="bento">
-          <Reveal className="tile t-wall">
-            <Loop src="/media/live-1.mp4" className="tile-media" />
-            <div className="tile-copy on-media">
-              <span className="tag">Wallpapers</span>
-              <h3>Live 4K wallpapers</h3>
-              <p>
-                Stills and slow-moving video from an online library, or your own .mp4. Schedule a different one for
-                mornings and evenings.
-              </p>
-            </div>
-          </Reveal>
-
-          <Reveal className="tile t-cards" delay={80}>
-            <div className="tile-copy">
-              <span className="tag">Shortcuts</span>
-              <h3>Your sites, in glass cards</h3>
-              <p>Group them into sections, drag to reorder, right-click to edit. Keep Personal and Work apart with workspaces.</p>
-            </div>
-            <div className="crop crop-cards">
-              <img src="/media/shot-2.jpg" alt="" loading="lazy" />
-            </div>
-          </Reveal>
-
-          <Reveal className="tile t-tools">
-            <div className="tile-copy">
-              <span className="tag">Quick tools</span>
-              <h3>The small stuff, one click away</h3>
-            </div>
-            <ul className="toolgrid">
-              {[
-                ["Notes", "M5 4h10l4 4v12H5z M14 4v5h5"],
-                ["Habits", "M5 12.5l4.5 4.5L19 7.5"],
-                ["Reminders", "M12 21a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2zM18 16V11a6 6 0 0 0-12 0v5l-2 2h16z"],
-                ["Focus timer", "M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"],
-                ["Tab manager", "M3 7h18v13H3zM3 7l3-3h6l2 3"],
-                ["Day planner", "M4 6h16v14H4zM4 10h16M9 3v4M15 3v4"],
-                ["Translate", "M4 5h9M8.5 3v2M6 5c1 4 4 7 7 8M11 5c-1 4-4 7-7 8M13 20l4-9 4 9M14.5 17h5"],
-                ["Stats", "M4 20V10M10 20V4M16 20v-7M22 20H2"],
-              ].map(([name, d]) => (
-                <li key={name}>
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d={d} />
-                  </svg>
-                  {name}
-                </li>
+    <section className="keys" aria-label="Keyboard shortcuts">
+      <div className="wrap keys-row">
+        {keys.map((x, i) => (
+          <Reveal className="key-item" key={x.t} delay={i * 80}>
+            <span className="kbds">
+              {x.k.map((k) => (
+                <kbd key={k}>{k}</kbd>
               ))}
-            </ul>
+            </span>
+            <span>{x.t}</span>
           </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
 
-          <Reveal className="tile t-ai" delay={80}>
-            <div className="tile-copy">
-              <span className="tag">Assistant</span>
-              <h3>Ask without leaving the tab</h3>
-              <p>A small panel in the corner. Talk or type; it can plan your day around your calendar.</p>
-            </div>
-            <div className="chat" aria-hidden="true">
-              <p className="me">Plan my afternoon — I have a call at 3.</p>
-              <p className="bot">
-                1:00 deep work on the report · 2:30 prep notes for the call · 3:00 call · 4:00 inbox and wrap-up.
-              </p>
-            </div>
-          </Reveal>
+/* ---------- numbers ---------- */
+function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
+  const [el, setEl] = useState<HTMLSpanElement | null>(null);
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      const t0 = performance.now();
+      const tick = (t: number) => {
+        const p = Math.min(1, (t - t0) / 1200);
+        setN(Math.round(to * (1 - Math.pow(1 - p, 3))));
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [el, to]);
+  return (
+    <span ref={setEl}>
+      {n}
+      {suffix}
+    </span>
+  );
+}
 
-          <Reveal className="tile t-zen">
-            <Loop src="/media/live-2.mp4" className="tile-media" />
-            <div className="zen-clock" aria-hidden="true">
-              <ZenTime />
-            </div>
-            <div className="tile-copy on-media">
-              <span className="tag">Zen</span>
-              <h3>Press Z for quiet</h3>
-            </div>
+function Numbers() {
+  return (
+    <section className="nums">
+      <div className="wrap nums-row">
+        {[
+          [20, "+", "built-in tools"],
+          [8, "", "theme presets"],
+          [10, "", "search engines, plus your own"],
+          [0, "", "ads or trackers"],
+        ].map(([n, s, l], i) => (
+          <Reveal className="num" key={l as string} delay={i * 80}>
+            <b>
+              <CountUp to={n as number} suffix={s as string} />
+            </b>
+            <small>{l}</small>
           </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
 
-          <Reveal className="tile t-custom" delay={80}>
-            <div className="crop crop-custom">
-              <img src="/media/shot-4.jpg" alt="" loading="lazy" />
-            </div>
-            <div className="tile-copy">
-              <span className="tag">Customize</span>
-              <h3>Tune every pixel</h3>
-              <p>Accent colour, glass opacity and blur, roundness, fonts, cursors and lighting. Save it to your account and it follows you.</p>
-            </div>
-          </Reveal>
+/* ---------- chapter heading ---------- */
+function Chapter({ id, n, kicker, title, em, children }: { id: string; n: string; kicker: string; title: string; em: string; children?: React.ReactNode }) {
+  return (
+    <Reveal className="section-head chapter">
+      <span className="chap-n">{n}</span>
+      <div>
+        <p className="eyebrow" id={id}>
+          {kicker}
+        </p>
+        <h2 className="h2">
+          {title} <em>{em}</em>
+        </h2>
+        {children && <p className="lede">{children}</p>}
+      </div>
+    </Reveal>
+  );
+}
 
-          <Reveal className="tile t-small">
-            <span className="tag">Private space</span>
-            <h3>A locked folder for the links you'd rather not leave lying around.</h3>
-          </Reveal>
-          <Reveal className="tile t-small" delay={60}>
-            <span className="tag">Now playing</span>
-            <h3>Pause YouTube or Spotify from the new tab, without hunting for the tab.</h3>
-          </Reveal>
-          <Reveal className="tile t-small" delay={120}>
-            <span className="tag">Sync</span>
-            <h3>Sign in with Google and your setup is the same on every computer.</h3>
-          </Reveal>
+/* the online library card: the wallpaper changes by itself */
+function LibraryCard() {
+  const picks = ["halo", "storm", "meadow", "anime"];
+  const i = useCycle(picks.length, 4200);
+  const chips = ["All", "4K", "Live", "Anime", "Nature", "Favourites"];
+  return (
+    <Card className="c-wall span-4 tall">
+      <div className="lib-media">
+        {picks.map((p, k) => (
+          <Loop key={p} src={`/media/wp/${p}.mp4`} poster={`/media/wp/${p}.jpg`} className={"lib-v" + (k === i ? " on" : "")} />
+        ))}
+      </div>
+      <div className="lib-chips">
+        {chips.map((c, k) => (
+          <span key={c} className={k === i % 3 ? "on" : ""}>
+            {c}
+          </span>
+        ))}
+      </div>
+      <div className="card-copy on-media">
+        <span className="tag">Wallpapers</span>
+        <h3>Live 4K wallpapers that change with your day</h3>
+        <p>
+          A built-in set, an online library of stills and slow video, or your own image or .mp4. Schedule one for
+          mornings and another for evenings; tune brightness, blur, dim, drift and speed.
+        </p>
+      </div>
+      <div className="lib-dots">
+        {picks.map((p, k) => (
+          <i key={p} className={k === i ? "on" : ""} />
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+/* ---------- 01 look ---------- */
+function Look() {
+  return (
+    <section className="section" id="look">
+      <div className="wrap">
+        <Chapter id="features" n="01" kicker="Make it yours" title="A page you'll want" em="to look at.">
+          Every pixel is a setting, and every setting saves itself.
+        </Chapter>
+        <div className="bento">
+          <LibraryCard />
+          <Card className="span-2" delay={80}>
+            <CardCopy tag="Lighting" title="A light that runs around the edges">
+              Border light, orbs, 3D tilt and five panel transitions.
+            </CardCopy>
+            <LightMock />
+          </Card>
+          <Card className="span-2">
+            <ZenMock />
+            <CardCopy tag="Zen & Minimal" title="Press Z for quiet, M for less">
+              A full-screen clock with world times, or only the clock and search.
+            </CardCopy>
+          </Card>
+          <Card className="span-2" delay={80}>
+            <CardCopy tag="Daily quote" title="Something good above the search bar">
+              Motivation, Focus, Wisdom, Calm, or your own.
+            </CardCopy>
+            <QuoteMock />
+          </Card>
+          <Card className="span-2" delay={160}>
+            <CardCopy tag="Cursors" title="Cursor packs that follow you">
+              Pick a pointer and it works on every site, not just the new tab.
+            </CardCopy>
+            <CursorMock />
+          </Card>
         </div>
       </div>
     </section>
   );
 }
 
-function ZenTime() {
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => {
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 15_000);
-    return () => clearInterval(t);
-  }, []);
-  if (!now) return <span>&nbsp;</span>;
-  return <span>{now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(/\s?[AP]M/i, "")}</span>;
+/* ---------- 02 get around ---------- */
+function ShortcutsCard() {
+  const ws = useCycle(2, 3600);
+  const sets = [
+    [["youtube", "YouTube"], ["gmail", "Gmail"], ["spotify", "Spotify"], ["discord", "Discord"], ["reddit", "Reddit"], ["x", "X"], ["photos", "Photos"], ["maps", "Maps"]],
+    [["github", "GitHub"], ["linear", "Linear"], ["figma", "Figma"], ["notion", "Notion"], ["slack", "Slack"], ["vercel", "Vercel"], ["docs", "Docs"], ["sheets", "Sheets"]],
+  ];
+  return (
+    <Card className="span-3 tall">
+      <CardCopy tag="Shortcuts & workspaces" title="Your sites, in glass cards">
+        Group them into sections, drag to reorder, right-click to edit. Keep Personal and Work apart, each with its own
+        shortcuts.
+      </CardCopy>
+      <div className="sc">
+        <div className="sc-rail">
+          <span className={ws === 0 ? "on" : ""}>
+            <Icon d={I.home} size={14} />
+          </span>
+          <span className={ws === 1 ? "on" : ""}>
+            <Icon d={I.work} size={14} />
+          </span>
+          <span>
+            <Icon d={I.lock} size={14} />
+          </span>
+        </div>
+        <div className="sc-card glass" key={ws}>
+          <div className="nt-tabs">
+            <span className="on">{ws ? "Work" : "Personal"}</span>
+            <span>{ws ? "Design" : "Watch"}</span>
+            <span>{ws ? "Docs" : "Social"}</span>
+          </div>
+          <div className="nt-grid">
+            {sets[ws].map(([n, l], i) => (
+              <AppIcon key={n} n={n} label={l} style={{ animationDelay: i * 50 + "ms" }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function GetAround() {
+  return (
+    <section className="section tint" id="around">
+      <div className="wrap">
+        <Chapter id="around-h" n="02" kicker="Get around" title="Everything is" em="one keystroke away." />
+        <div className="bento">
+          <ShortcutsCard />
+          <Card className="span-3 tall" delay={80}>
+            <CardCopy tag="Command Center" title="Ctrl + Space, then just type">
+              Every tool and setting by name: start a focus session, switch wallpaper, add a reminder, plan your day.
+            </CardCopy>
+            <CommandMock />
+          </Card>
+          <Card className="span-2">
+            <CardCopy tag="Search" title="Ten engines and bangs">
+              Pick the engine from the bar, or send one search elsewhere with !yt, !gh or !w.
+            </CardCopy>
+            <SearchMock />
+          </Card>
+          <Card className="span-2" delay={80}>
+            <CardCopy tag="Now playing" title="Pause the music without hunting for the tab">
+              Spotify, YouTube, SoundCloud and more, with artwork and a seek bar.
+            </CardCopy>
+            <PlayingMock />
+          </Card>
+          <Card className="span-2" delay={160}>
+            <CardCopy tag="Translate" title="Read any site in your language">
+              Pages translate as they load. One click shows the original.
+            </CardCopy>
+            <TranslateMock />
+          </Card>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- 03 get things done ---------- */
+function GetDone() {
+  return (
+    <section className="section" id="done">
+      <div className="wrap">
+        <Chapter id="done-h" n="03" kicker="Get things done" title="A quiet desk," em="not another app." />
+        <div className="bento">
+          <Card className="span-2 tall">
+            <CardCopy tag="Focus timer" title="25 on, 5 off, distractions blocked">
+              While you focus, the blocker's list is shut and the wallpaper dims. It ends on time even with no tab open.
+            </CardCopy>
+            <FocusMock />
+          </Card>
+          <Card className="span-2 tall" delay={80}>
+            <CardCopy tag="Reminders" title="Alarms that ring anywhere in Chrome">
+              Once, daily, weekdays, monthly or yearly, with Snooze and your own sound.
+            </CardCopy>
+            <RemindMock />
+          </Card>
+          <Card className="span-2 tall" delay={160}>
+            <CardCopy tag="Assistant" title="Ask without leaving the tab">
+              Type or talk. It knows your calendar and can read answers aloud.
+            </CardCopy>
+            <ChatMock />
+          </Card>
+          <Card className="span-3">
+            <CardCopy tag="Habits" title="Streaks you can see">
+              Tick today, pick the days it's due, and fill in a day you forgot on the heatmap.
+            </CardCopy>
+            <HabitMock />
+          </Card>
+          <Card className="span-3" delay={80}>
+            <CardCopy tag="Notes & Goals" title="Goals with tasks, tasks with reminders">
+              Every task can have a date and ring as a reminder. Ctrl+Enter adds a quick note.
+            </CardCopy>
+            <GoalsMock />
+          </Card>
+          <Card className="span-2">
+            <CardCopy tag="Day planner · Pro" title="Plan my day, in one click">
+              Tasks, events, reminders and habits, laid out on a timeline.
+            </CardCopy>
+            <PlannerMock />
+          </Card>
+          <Card className="span-2" delay={80}>
+            <CardCopy tag="Calendar · Pro" title="Today and the next seven days">
+              From Google Calendar, with a Join button for Meet.
+            </CardCopy>
+            <CalendarMock />
+          </Card>
+          <Card className="span-2" delay={160}>
+            <CardCopy tag="Stats" title="Where the time actually went">
+              Focus, tasks, habits and your top sites. Pro adds 30 days and a weekly email.
+            </CardCopy>
+            <StatsMock />
+          </Card>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- 04 control ---------- */
+function Control() {
+  return (
+    <section className="section tint" id="control">
+      <div className="wrap">
+        <Chapter id="control-h" n="04" kicker="Stay in control" title="Calmer browsing," em="on your terms." />
+        <div className="bento">
+          <Card className="span-3">
+            <CardCopy tag="Site blocker" title="Block the rabbit holes">
+              Single sites or one-click groups, always or only at set times, with your own message.
+            </CardCopy>
+            <BlockMock />
+          </Card>
+          <Card className="span-3" delay={80}>
+            <CardCopy tag="Optimize & tab manager" title="Fewer tabs, less memory">
+              Close duplicates, put idle tabs to sleep, save a window as a session and open it later.
+            </CardCopy>
+            <TabsMock />
+          </Card>
+          <Card className="span-2">
+            <CardCopy tag="Private space · Pro" title="A locked folder for private links">
+              Password-protected shortcuts and notes, encrypted on your computer.
+            </CardCopy>
+            <VaultMock />
+          </Card>
+          <Card className="span-2" delay={80}>
+            <CardCopy tag="Voice" title="Talk to search, talk to the assistant">
+              Voice typing in the bar and a talk mode that listens, answers and listens again.
+            </CardCopy>
+            <VoiceMock />
+          </Card>
+          <Card className="span-2" delay={160}>
+            <CardCopy tag="Sync · Pro" title="The same Atlas on every computer">
+              Settings, shortcuts, notes, habits, reminders and the private space.
+            </CardCopy>
+            <SyncMock />
+          </Card>
+        </div>
+        <Reveal className="extras">
+          {[
+            ["Extensions manager", "Turn your other extensions on and off"],
+            ["Weather", "Your city, in °C or °F"],
+            ["Quick Peek", "Glance at your tabs from the corner"],
+            ["Backup", "Export and import as a file"],
+            ["Own search engines", "Add any site with a %s link"],
+            ["Widgets", "Move and resize everything"],
+          ].map(([t, s]) => (
+            <span key={t}>
+              <Icon d={I.check} size={14} />
+              <b>{t}</b>
+              <small>{s}</small>
+            </span>
+          ))}
+        </Reveal>
+      </div>
+    </section>
+  );
 }
 
 /* ---------- themes: the whole page recolours ---------- */
 function Themes() {
   const [theme, pick] = useTheme();
+  const now = useNow(15_000);
   return (
     <section id="themes" className="section themes">
       <div className="wrap themes-grid">
@@ -292,38 +578,58 @@ function Themes() {
                 aria-checked={theme.id === t.id}
                 className={"swatch" + (theme.id === t.id ? " is-on" : "")}
                 onClick={() => pick(t)}
+                style={{ "--sa": t.accent, "--sg": t.glass } as React.CSSProperties}
               >
-                <span className="dot" style={{ background: `linear-gradient(135deg, ${t.accent} 50%, ${t.glass} 50%)` }} />
-                {t.label}
+                <span className="sw-img" style={{ backgroundImage: `url(/media/wp/${t.wall}.jpg)` }}>
+                  <span className="sw-glass">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                </span>
+                <span className="sw-label">
+                  <span className="sw-dot" />
+                  {t.label}
+                </span>
               </button>
             ))}
           </div>
         </Reveal>
         <Reveal className="mini" delay={100}>
-          <Loop key={theme.tone} src={theme.tone} className="mini-bg" />
+          <Loop key={theme.wall} src={`/media/wp/${theme.wall}.mp4`} poster={`/media/wp/${theme.wall}.jpg`} className="mini-bg" />
+          <div className="mini-shade" />
           <div className="mini-top">
             <div className="mini-clock">
-              <ZenTime />
-              <small>{new Date().toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" })}</small>
+              {hm(now)}
+              <small>{now ? now.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" }) : " "}</small>
             </div>
             <span className="mini-chip">Quick peek</span>
           </div>
-          <div className="mini-card">
-            <div className="mini-tabs">
+          <div className="mini-card glass">
+            <div className="nt-tabs">
               <span className="on">All</span>
               <span>Apps</span>
               <span>Work</span>
             </div>
-            <div className="mini-icons">
-              {["Mail", "Docs", "Music", "Maps", "Code", "News", "Chat", "Cal"].map((n) => (
-                <span key={n}>
-                  <i />
-                  {n}
-                </span>
+            <div className="nt-grid">
+              {[
+                ["gmail", "Mail"],
+                ["docs", "Docs"],
+                ["spotify", "Music"],
+                ["maps", "Maps"],
+                ["github", "Code"],
+                ["hackernews", "News"],
+                ["slack", "Chat"],
+                ["calendar", "Cal"],
+              ].map(([n, l], i) => (
+                <AppIcon key={n + theme.id} n={n} label={l} style={{ animationDelay: i * 40 + "ms" }} />
               ))}
             </div>
           </div>
-          <div className="mini-search">Search Google…</div>
+          <div className="mini-search glass">
+            <Icon d={I.search} size={14} />
+            Search Google…
+          </div>
         </Reveal>
       </div>
     </section>
@@ -331,15 +637,23 @@ function Themes() {
 }
 
 /* ---------- pricing ---------- */
-const FREE = ["Live and still wallpapers (5 from the online library)", "Shortcut cards and workspaces", "Search, weather, now playing", "Notes, 3 habits, focus timer", "Assistant, 20 messages a day"];
+const FREE = [
+  "Live and still wallpapers (5 from the online library)",
+  "Shortcut cards and workspaces",
+  "Command Center, search bangs, voice typing",
+  "Focus timer, reminders, site blocker",
+  "Notes & goals, 3 habits, 3 tab sessions",
+  "Translate, now playing, weather, daily quote",
+  "Assistant, 20 messages a day",
+];
 const PRO = [
   "Every theme preset and cursor pack",
   "Unlimited 4K and live wallpapers",
   "Private space",
   "Automatic sync and backup",
-  "AI day planner and calendar",
+  "AI day planner and Google Calendar",
   "30-day stats and a weekly email",
-  "Unlimited habits and saved tab sessions",
+  "30 habits and 50 saved tab sessions",
   "Assistant, 500 messages a day",
 ];
 
@@ -369,7 +683,7 @@ function Pricing() {
         </Reveal>
 
         <div className="plans">
-          <Reveal className="plan">
+          <Card className="plan">
             <h3>Free</h3>
             <p className="plan-price">
               <b>$0</b>
@@ -382,14 +696,14 @@ function Pricing() {
                 <li key={f}>{f}</li>
               ))}
             </ul>
-          </Reveal>
-          <Reveal className="plan plan-pro" delay={80}>
+          </Card>
+          <Card className="plan plan-pro" delay={80}>
             <div className="plan-head">
               <h3>Pro</h3>
               <span className="pill">7 days free</span>
             </div>
             <p className="plan-price">
-              <b>{money(yearly ? prices.yearly : prices.monthly)}</b>
+              <b key={String(yearly)}>{money(yearly ? prices.yearly : prices.monthly)}</b>
               <span>{yearly ? "per year" : "per month"}</span>
             </p>
             <p className="plan-note">
@@ -402,7 +716,7 @@ function Pricing() {
                 <li key={f}>{f}</li>
               ))}
             </ul>
-          </Reveal>
+          </Card>
         </div>
         <p className="fine center">
           The trial starts when you sign in inside Atlas. No card needed for the trial; upgrade from Customize › Account.
@@ -416,7 +730,9 @@ function Pricing() {
 const FAQ = [
   ["Is Atlas really free?", "Yes. The free version has no time limit and no ads. Pro adds extra themes, unlimited wallpapers, sync, the private space and a few power tools, and it pays for the servers."],
   ["What does Atlas know about my browsing?", "Your shortcuts, settings and screen-time stats stay in your browser. Stats only note which site is in front and for how long (the domain, never the page), and they're only uploaded if you turn on the weekly email. The privacy policy lists everything that leaves your computer."],
+  ["Do reminders and the focus timer work with no new tab open?", "Yes. They run in the extension's background worker, so a reminder rings and a focus session ends on time wherever you are in Chrome. A reminder missed while Chrome was closed rings when it opens again (up to 12 hours late)."],
   ["Which browsers does it work in?", "Any Chromium browser that installs Chrome Web Store extensions: Chrome, Edge, Brave, Arc, Opera and Vivaldi."],
+  ["Is the private space really private?", "Its contents are encrypted on your computer with your password (PBKDF2 and AES-GCM). With sync on, only the encrypted copy is uploaded. That also means the password can't be recovered, so keep it somewhere safe."],
   ["How do I cancel Pro?", "Open Customize › Account › Manage subscription. You keep Pro until the end of the period you've paid for, and your settings stay as they are."],
   ["Do I need an account?", "Only for Pro, sync and backup. Everything else works signed out. Signing in uses your Google account; there's no password to remember."],
   ["Can I use my own wallpaper?", "Yes. Upload any image or .mp4 from Customize › Background. It stays on your computer."],
@@ -431,13 +747,18 @@ function Faq() {
           <h2 className="h2">
             Good to <em>know.</em>
           </h2>
+          <p className="lede">
+            Something else? <a href={"mailto:" + CONTACT_EMAIL}>Write to us</a> and a real person answers.
+          </p>
         </Reveal>
         <div className="faq">
-          {FAQ.map(([q, a]) => (
-            <details key={q}>
-              <summary>{q}</summary>
-              <p>{a}</p>
-            </details>
+          {FAQ.map(([q, a], i) => (
+            <Reveal key={q} delay={i * 40}>
+              <details>
+                <summary>{q}</summary>
+                <p>{a}</p>
+              </details>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -448,9 +769,10 @@ function Faq() {
 function Closing() {
   return (
     <section className="closing">
-      <Loop src="/media/hero.mp4" poster="/media/hero.jpg" className="closing-video" />
+      <Loop src="/media/wp/storm.mp4" poster="/media/wp/storm.jpg" className="closing-video" />
       <div className="closing-shade" />
       <div className="wrap closing-inner">
+        <img src="/media/logo-256.png" alt="" className="closing-logo" width={84} height={84} />
         <h2 className="display small">
           Open a new tab.
           <br />
