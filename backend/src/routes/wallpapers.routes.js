@@ -62,7 +62,7 @@ wallpapersRouter.get("/wallpapers/live", async (req, res) => {
     key: env.pixabay.key,
     per_page: String(PER_PAGE),
     page: String(page),
-    min_width: "1920",
+    min_width: String(MAX_WIDTH), // 4K only: Pixabay's "large" file is then 3840x2160
     safesearch: "true",
     order: "popular",
   });
