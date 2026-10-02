@@ -89,7 +89,11 @@ export function AnimeLovers() {
   /* fetch the next 4K still ahead of time, so the spotlight is sharp when it gets there */
   useEffect(() => {
     const next = items[(sel + 1) % items.length];
-    if (next && next.kind === "still") new Image().src = next.media;
+    if (next && next.kind === "still") {
+      const img = new Image();
+      img.referrerPolicy = "no-referrer";
+      img.src = next.media;
+    }
   }, [sel, items]);
 
   const cur = items[sel];
@@ -223,11 +227,11 @@ function SpotMedia({ item }: { item: AnimeItem }) {
   const [ready, setReady] = useState(false);
   return (
     <div className="spot-media">
-      <img className="spot-poster" src={item.poster} alt="" />
+      <img className="spot-poster" src={item.poster} alt="" referrerPolicy="no-referrer" />
       {item.kind === "live" ? (
         <video className={"spot-full" + (ready ? " on" : "")} src={item.media} muted loop playsInline autoPlay preload="auto" onPlaying={() => setReady(true)} />
       ) : (
-        <img className={"spot-full" + (ready ? " on" : "")} src={item.media} alt="" decoding="async" onLoad={() => setReady(true)} />
+        <img className={"spot-full" + (ready ? " on" : "")} src={item.media} alt="" referrerPolicy="no-referrer" decoding="async" onLoad={() => setReady(true)} />
       )}
       {!ready && <span className="spot-loading">{item.kind === "live" ? "Loading live preview…" : "Loading 4K…"}</span>}
     </div>
@@ -264,7 +268,7 @@ function WallCard({ it, k, on, dim, onPick }: { it: AnimeItem; k: number; on: bo
       aria-pressed={on}
     >
       <span className="holo-in">
-        <img src={it.thumb} alt="" loading="lazy" />
+        <img src={it.thumb} alt="" referrerPolicy="no-referrer" loading="lazy" />
         {hover && it.kind === "live" && <video src={it.media} muted loop playsInline autoPlay />}
         <span className="holo-foil" />
         <span className="holo-badge">
