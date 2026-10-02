@@ -229,16 +229,24 @@ const PRO_CONFIG = {
   freeStatsDays: 1,
   freeSessions: 3,
   freeWallpapers: 5,
+  /* shown on the upgrade box until the server answers with Paddle's real
+     prices (GET /billing/plans); keep them in step with Paddle */
+  prices: {
+    monthly: { amount: 5, currency: "USD" },
+    yearly: { amount: 39.99, currency: "USD" },
+  },
 };
 
 /* ---------- 5d. ABOUT ------------------------------------------
    The footer of Quick tools: Feedback, Rate us, Share and the links.
    storeUrl:   the Chrome Web Store page; "" = worked out from the
                extension's id once it's published
-   privacyUrl: "" = the backend's /privacy.html (ACCOUNT_CONFIG.api)  */
+   siteUrl:    the marketing site (repo root, on Vercel), no trailing slash
+   privacyUrl: "" = <siteUrl>/privacy, or the backend's /privacy.html  */
 const ABOUT_CONFIG = {
   feedbackEmail: "muhammadaqibawan07@gmail.com",
   storeUrl: "",
+  siteUrl: "",
   privacyUrl: "",
 };
 

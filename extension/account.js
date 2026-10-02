@@ -269,9 +269,42 @@
 
   /* ---------- billing (Paddle, through the backend) ---------- */
   const openTab = (url) => (chrome.tabs && chrome.tabs.create ? chrome.tabs.create({ url }) : window.open(url, "_blank"));
+  /* the checkout this computer opened and hasn't seen confirmed yet;
+     pro.js keeps asking the server about it until Pro is on */
+  const PENDING_KEY = "billing:pending";
   async function upgrade(interval) {
-    const { url } = await api("/billing/checkout", { method: "POST", body: { interval } });
+    const { url, transactionId } = await api("/billing/checkout", { method: "POST", body: { interval } });
+    await put({ [PENDING_KEY]: { id: transactionId || "", interval, at: Date.now() } });
     openTab(url);
+  }
+  /* a checkout opened within the last day, or null */
+  async function pendingPurchase() {
+    const p = await get(PENDING_KEY);
+    if (!p || Date.now() - p.at > 86_400_000) return null;
+    return p;
+  }
+  const clearPending = () => drop(PENDING_KEY);
+  /* asks the server to fetch the subscription from Paddle now (rather than
+     wait for the webhook) and keeps the fresh profile. -> isPro() */
+  async function syncBilling() {
+    const p = await pendingPurchase();
+    const data = await api("/billing/sync", { method: "POST", body: { transactionId: p ? p.id : undefined } });
+    if (session && data && data.user && JSON.stringify(data.user) !== JSON.stringify(session.user)) {
+      session = Object.assign({}, session, { user: data.user });
+      await put({ [KEY]: session });
+      emit();
+    }
+    return paid(session && session.user);
+  }
+  /* the prices of the two plans, from Paddle -> { monthly, yearly } or {} */
+  let plansP = null;
+  function plans() {
+    if (!plansP) {
+      plansP = request("/billing/plans")
+        .then((p) => { if (!p || !p.monthly) plansP = null; return p || {}; })
+        .catch(() => { plansP = null; return {}; });
+    }
+    return plansP;
   }
   async function manageBilling() {
     const { url } = await api("/billing/portal", { method: "POST" });
@@ -352,6 +385,11 @@
     restoreFromAccount,
     lastSync: () => get(SYNC_KEY),
     upgrade,
+    pendingPurchase,
+    clearPending,
+    syncBilling,
+    plans,
+    paid: () => paid(session && session.user),
     manageBilling,
     openTab,
     api,

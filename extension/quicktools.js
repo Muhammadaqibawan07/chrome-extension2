@@ -666,8 +666,8 @@
       h("span", { class: "qt-pro-tag", text: "PRO" }),
       h("p", { text }),
       h("button", {
-        type: "button", class: "qt-btn is-primary", text: A && A.signedIn() ? "Upgrade — $5/month" : "Sign in to upgrade",
-        onclick: () => (A && A.signedIn() ? A.upgrade("month").catch((e) => alert(e.message)) : AS.open("account")),
+        type: "button", class: "qt-btn is-primary", text: A && A.signedIn() ? "See Atlas Pro" : "Sign in to upgrade",
+        onclick: () => (A && A.signedIn() && window.AtlasPro ? AtlasPro.open("Atlas Pro", text) : AS.open("account")),
       }));
   }
 
@@ -1134,6 +1134,7 @@
     (hasChrome && chrome.runtime.id ? "https://chromewebstore.google.com/detail/" + chrome.runtime.id : "https://chromewebstore.google.com/");
   const privacyUrl = () => {
     if (ABOUT.privacyUrl) return ABOUT.privacyUrl;
+    if (ABOUT.siteUrl) return String(ABOUT.siteUrl).replace(/\/+$/, "") + "/privacy";
     const api = typeof ACCOUNT_CONFIG !== "undefined" && ACCOUNT_CONFIG.api ? String(ACCOUNT_CONFIG.api).replace(/\/+$/, "") : "";
     return api ? api + "/privacy.html" : "";
   };

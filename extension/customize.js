@@ -1583,11 +1583,14 @@
           onclick: () => accBusy(b, "Opening…", planMsg, () => Acc.manageBilling()) });
         planBtns.append(b);
       } else if (!Acc.allFree) {
-        const m = h("button", { type: "button", class: "cz-btn is-primary", text: "Upgrade — monthly",
-          onclick: () => accBusy(m, "Opening…", planMsg, () => Acc.upgrade("month")) });
-        const y = h("button", { type: "button", class: "cz-btn", text: "Upgrade — yearly",
-          onclick: () => accBusy(y, "Opening…", planMsg, () => Acc.upgrade("year")) });
-        planBtns.append(m, y);
+        const m = h("button", { type: "button", class: "cz-btn is-primary", text: "Upgrade to Pro",
+          onclick: () => (window.AtlasPro ? AtlasPro.open() : accBusy(m, "Opening…", planMsg, () => Acc.upgrade("month"))) });
+        /* paid somewhere and it hasn't shown up: ask Paddle now */
+        const c = h("button", { type: "button", class: "cz-btn", text: "Already paid? Refresh",
+          onclick: () => accBusy(c, "Checking…", planMsg, async () => {
+            if (!(await Acc.syncBilling())) say(planMsg, "No active subscription found for this account yet.");
+          }) });
+        planBtns.append(m, c);
       }
     };
     paintPlan(user, null);
