@@ -78,26 +78,31 @@ export function AnimeLovers() {
     setPage(1);
   };
 
-  /* the spotlight moves on by itself */
+  const cur = items[sel];
+  const next = items.length > 1 ? items[(sel + 1) % items.length] : undefined;
+  const loading = state === "loading";
+
+  /* the spotlight moves on by itself, but its clock only starts once the
+     wallpaper is showing (or has given up), so slow clips aren't cut off */
+  const [spotState, setSpotState] = useState<{ id: string; status: SpotStatus }>({ id: "", status: "loading" });
+  const curStatus = cur && spotState.id === cur.id ? spotState.status : "loading";
+  const onStatus = useCallback((id: string, status: SpotStatus) => setSpotState({ id, status }), []);
+  const ticking = !paused && items.length > 1 && curStatus !== "loading";
   useEffect(() => {
-    if (paused || items.length < 2) return;
+    if (!ticking) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const t = setTimeout(() => setSel((s) => (s + 1) % items.length), 8000);
     return () => clearTimeout(t);
-  }, [sel, paused, items.length]);
+  }, [sel, ticking, items.length]);
 
   /* fetch the next 4K still ahead of time, so the spotlight is sharp when it gets there */
   useEffect(() => {
-    const next = items[(sel + 1) % items.length];
     if (next && next.kind === "still") {
       const img = new Image();
       img.referrerPolicy = "no-referrer";
       img.src = next.media;
     }
-  }, [sel, items]);
-
-  const cur = items[sel];
-  const loading = state === "loading";
+  }, [next]);
 
   return (
     <section className="section tint anime" id="anime" ref={rootRef}>
@@ -146,7 +151,9 @@ export function AnimeLovers() {
             <div className={"spot" + (loading ? " is-loading" : "")} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
               {cur ? (
                 <>
-                  <SpotMedia key={cur.id} item={cur} />
+                  <SpotMedia key={cur.id} item={cur} onStatus={onStatus} />
+                  {/* the next live clip starts downloading while this one shows */}
+                  {next?.kind === "live" && <video key={"pre" + next.id} className="spot-pre" src={clipSrc(next.media)} muted preload="auto" aria-hidden="true" />}
                   <div className="spot-top">
                     <span className="spot-badge">
                       {cur.kind === "live" ? (
@@ -181,8 +188,8 @@ export function AnimeLovers() {
                   <button type="button" className="spot-nav next" aria-label="Next wallpaper" onClick={() => setSel((s) => (s + 1) % items.length)}>
                     {arrow("M9 5l7 7-7 7")}
                   </button>
-                  <span className="spot-bar" key={"b" + sel + String(paused)}>
-                    <i className={paused ? "" : "run"} />
+                  <span className="spot-bar" key={"b" + sel + String(ticking)}>
+                    <i className={ticking ? "run" : ""} />
                   </span>
                 </>
               ) : (
@@ -222,18 +229,82 @@ export function AnimeLovers() {
   );
 }
 
-/* the big picture: the live clip, or the 4K still once it has arrived */
-function SpotMedia({ item }: { item: AnimeItem }) {
-  const [ready, setReady] = useState(false);
+type SpotStatus = "loading" | "ready" | "failed";
+
+/* how long a wallpaper gets to appear before the poster is shown instead */
+const SPOT_WAIT = 15000;
+
+/* once a clip has failed straight from wallpaperwaves.com, the rest go through /api/video */
+let directBroken = false;
+const viaSite = (u: string) => "/api/video?u=" + encodeURIComponent(u);
+const clipSrc = (u: string) => (directBroken ? viaSite(u) : u);
+
+/* the big picture: the live clip, or the 4K still once it has arrived.
+   A live clip that errors or stalls is retried once through our own
+   server (/api/video), then falls back to its poster. */
+function SpotMedia({ item, onStatus }: { item: AnimeItem; onStatus: (id: string, s: SpotStatus) => void }) {
+  const [status, setStatus] = useState<SpotStatus>("loading");
+  const [viaProxy, setViaProxy] = useState(() => directBroken);
+  const [attempt, setAttempt] = useState(0);
+  const live = item.kind === "live";
+  const src = live && viaProxy ? viaSite(item.media) : item.media;
+
+  useEffect(() => onStatus(item.id, status), [item.id, status, onStatus]);
+
+  const fail = useCallback(() => {
+    if (live && !viaProxy) {
+      directBroken = true;
+      setViaProxy(true);
+      setAttempt((n) => n + 1);
+    } else setStatus("failed");
+  }, [live, viaProxy]);
+
+  useEffect(() => {
+    if (status !== "loading") return;
+    const t = setTimeout(fail, SPOT_WAIT);
+    return () => clearTimeout(t);
+  }, [status, attempt, fail]);
+
+  const retry = () => {
+    setStatus("loading");
+    setAttempt((n) => n + 1);
+  };
+
   return (
     <div className="spot-media">
       <img className="spot-poster" src={item.poster} alt="" referrerPolicy="no-referrer" />
-      {item.kind === "live" ? (
-        <video className={"spot-full" + (ready ? " on" : "")} src={item.media} muted loop playsInline autoPlay preload="auto" onPlaying={() => setReady(true)} />
-      ) : (
-        <img className={"spot-full" + (ready ? " on" : "")} src={item.media} alt="" referrerPolicy="no-referrer" decoding="async" onLoad={() => setReady(true)} />
+      {status !== "failed" &&
+        (live ? (
+          <video
+            key={attempt}
+            className={"spot-full" + (status === "ready" ? " on" : "")}
+            src={src}
+            muted
+            loop
+            playsInline
+            autoPlay
+            preload="auto"
+            onPlaying={() => setStatus("ready")}
+            onError={fail}
+          />
+        ) : (
+          <img
+            key={attempt}
+            className={"spot-full" + (status === "ready" ? " on" : "")}
+            src={src}
+            alt=""
+            referrerPolicy="no-referrer"
+            decoding="async"
+            onLoad={() => setStatus("ready")}
+            onError={() => setStatus("failed")}
+          />
+        ))}
+      {status === "loading" && <span className="spot-loading">{live ? "Loading live preview…" : "Loading 4K…"}</span>}
+      {status === "failed" && (
+        <button type="button" className="spot-loading spot-retry" onClick={retry}>
+          {live ? "Live preview didn't load · Retry" : "4K didn't load · Retry"}
+        </button>
       )}
-      {!ready && <span className="spot-loading">{item.kind === "live" ? "Loading live preview…" : "Loading 4K…"}</span>}
     </div>
   );
 }
@@ -269,7 +340,7 @@ function WallCard({ it, k, on, dim, onPick }: { it: AnimeItem; k: number; on: bo
     >
       <span className="holo-in">
         <img src={it.thumb} alt="" referrerPolicy="no-referrer" loading="lazy" />
-        {hover && it.kind === "live" && <video src={it.media} muted loop playsInline autoPlay />}
+        {hover && it.kind === "live" && <video src={clipSrc(it.media)} muted loop playsInline autoPlay />}
         <span className="holo-foil" />
         <span className="holo-badge">
           {it.kind === "live" ? (

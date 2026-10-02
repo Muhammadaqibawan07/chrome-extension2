@@ -612,6 +612,9 @@ img.spot-full.on { animation: kenburns 16s ease-in-out infinite alternate; }
 .spot::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(0deg, rgb(8 8 10 / 0.85) 0%, rgb(8 8 10 / 0.15) 45%, transparent 60%), linear-gradient(180deg, rgb(8 8 10 / 0.45), transparent 25%); }
 .spot.is-loading .spot-media { filter: brightness(0.55) blur(4px); transition: filter 300ms; }
 .spot-loading { position: absolute; right: 24px; bottom: 28px; padding: 6px 12px; border-radius: 999px; background: rgb(0 0 0 / 0.45); backdrop-filter: blur(8px); font-size: 12px; color: var(--soft); }
+.spot-pre { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.spot-retry { z-index: 3; border: 0; cursor: pointer; color: var(--ink); }
+.spot-retry:hover { background: rgb(0 0 0 / 0.65); }
 .spot-top { position: absolute; left: 26px; right: 26px; top: 22px; display: flex; justify-content: space-between; align-items: center; }
 .spot-badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 13px; border-radius: 999px; background: rgb(var(--glass-rgb) / 0.55); border: 1px solid rgb(255 255 255 / 0.16); backdrop-filter: blur(10px); font-size: 12.5px; font-weight: 600; }
 .spot-count { font-family: var(--serif); font-size: 17px; color: var(--soft); text-shadow: 0 2px 14px rgb(0 0 0 / 0.6); }
