@@ -114,10 +114,51 @@
     if (p && p.catch) p.catch(() => {});
   }
 
+  /* online live wallpapers are big 4K files. Streamed from the CDN they
+     start on a few seconds of buffer, outrun the download and stall, and
+     each loop fetches them again. So the whole file is downloaded first
+     (kept in Cache Storage for next time) and played from memory. */
+  const VIDEO_CACHE = "atlas-live-videos";
+  const VIDEO_CACHE_MAX = 3; // files kept on disk
+  const videoBlobs = new Set(); // object URLs made here, revoked on unload
+
+  async function fullVideo(src) {
+    if (!/^https:\/\//.test(src) || typeof caches === "undefined") return src;
+    try {
+      const cache = await caches.open(VIDEO_CACHE);
+      let res = await cache.match(src);
+      if (!res) {
+        res = await fetch(src, { referrerPolicy: "no-referrer" });
+        if (!res.ok) return src;
+        try {
+          await cache.put(src, res.clone());
+          const keys = await cache.keys(); // oldest first
+          await Promise.all(keys.slice(0, Math.max(0, keys.length - VIDEO_CACHE_MAX)).map((k) => cache.delete(k)));
+        } catch (_) { /* no room: play it anyway */ }
+      }
+      let blob = await res.blob();
+      /* some hosts send it as a download (application/octet-stream) */
+      if (!/^video\//.test(blob.type)) blob = new Blob([blob], { type: "video/mp4" });
+      const url = URL.createObjectURL(blob);
+      videoBlobs.add(url);
+      return url;
+    } catch (_) {
+      return src; // stream it as before
+    }
+  }
+
+  function dropBlob(url) {
+    if (!videoBlobs.has(url)) return;
+    videoBlobs.delete(url);
+    URL.revokeObjectURL(url);
+  }
+
   function unloadVideo(v) {
+    const was = v.src;
     v.pause();
     v.removeAttribute("src");
     v.load();
+    dropBlob(was);
   }
 
   /* resolves once the video can play (or has failed, or taken too long) */
@@ -176,10 +217,17 @@
     const next = shownVideo ? layers[1 - front] : cur;
     loadingVideo = src;
     syncLoading();
-    next.src = src;
+    const stale = () => loadingVideo !== src || !want || want.video !== src;
+    const play = await fullVideo(src);
+    if (stale()) {
+      dropBlob(play);
+      if (loadingVideo === src) { loadingVideo = ""; syncLoading(); }
+      return false;
+    }
+    next.src = play;
     playSafe(next);
     if (!instant) await videoReady(next);
-    if (loadingVideo !== src || !want || want.video !== src) {
+    if (stale()) {
       if (loadingVideo === src) { loadingVideo = ""; syncLoading(); }
       if (!next.classList.contains("is-active")) unloadVideo(next);
       return false;
@@ -631,6 +679,13 @@
     };
   }
 
+  /* adding shortcuts, sections or open tabs to the private space is part
+     of Atlas Pro (pro.js opens the upgrade box); what's in it stays usable */
+  function privateLocked(ws) {
+    if (!ws || !ws.private || !window.AtlasPro) return false;
+    return AtlasPro.need("Adding tabs and shortcuts to the private space is part of Atlas Pro.");
+  }
+
   function openVault() {
     if (!vaultWs()) return;
     setWorkspace(VAULT_ID);
@@ -869,7 +924,7 @@
         }
         grid.append(a);
       });
-      const add = pfBtn("pf-app pf-app-add", "", () => pfAddForm(sec, card), "Add a shortcut to " + (card.title || "this section"));
+      const add = pfBtn("pf-app pf-app-add", "", () => privateLocked(ws) || pfAddForm(sec, card), "Add a shortcut to " + (card.title || "this section"));
       add.append(pfEl("span", "pf-app-icon", "+"), pfEl("span", "pf-app-name", "Add"));
       grid.append(add);
       sec.append(grid);
@@ -1391,7 +1446,7 @@
 
   async function saveOpenTabs() {
     const ws = vaultWs();
-    if (!ws || !canReadTabs || currentWs() !== ws) return;
+    if (!ws || !canReadTabs || currentWs() !== ws || privateLocked(ws)) return;
     let list = [];
     try { list = await chrome.tabs.query({ currentWindow: true }); } catch { list = []; }
     const tab = activeTab(ws);
@@ -1838,7 +1893,7 @@
 
   function addCard() {
     const ws = currentWs();
-    if (!ws) return;
+    if (!ws || privateLocked(ws)) return;
     openDialog("New section", [
       field("Name", "title", "", "Reading"),
       field("Label", "hint", "", "Later", "Optional, shown when hovering the tab"),
@@ -1881,6 +1936,7 @@
     if (!card) return;
     const item = itemId ? card.items.find((it) => it.id === itemId) : null;
     if (itemId && !item) return;
+    if (!item && privateLocked(currentWs())) return;
 
     openDialog(item ? "Edit shortcut" : "New shortcut", [
       field("Name", "name", item ? item.name : "", "GitHub"),
