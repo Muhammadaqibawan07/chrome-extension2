@@ -4186,7 +4186,6 @@ a.qt-cal-ev[href]:hover { background: rgba(255, 255, 255, 0.08); }
   55% { transform: scale(1.25); }
   100% { transform: scale(1); }
 }
-.cz-pwp-msg:empty { display: none; }
 .cz-pwp { transition: border-color 240ms var(--ease), box-shadow 240ms var(--ease), transform 240ms var(--ease); }
 .cz-pwp:active { transform: scale(0.97); }
 /* the picked card spins until its wallpaper is on screen (app.js) */
@@ -4687,3 +4686,84 @@ a.qt-cal-ev[href]:hover { background: rgba(255, 255, 255, 0.08); }
 .qt-log-head strong { color: var(--accent); font-size: 13px; }
 .qt-log-head small { font-size: 10.5px; color: var(--ink-faint); }
 .qt-log-ver ul { margin: 6px 0 0; padding-left: 16px; font-size: 12px; line-height: 1.55; color: var(--ink-soft); }
+
+/* ---------- Atlas Pro (pro.js) ----------
+   locked choices in Customize, the upgrade box and the welcome card */
+.cz-preset.is-locked, .cz-cur.is-locked { position: relative; }
+.cz-preset.is-locked .cz-dot, .cz-cur.is-locked .cz-cur-pics { opacity: 0.55; }
+.cz-lock { position: absolute; top: 3px; right: 4px; font-size: 9px; line-height: 1; }
+
+.pro-modal { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; }
+.pro-backdrop { position: absolute; inset: 0; background: rgba(10, 10, 14, 0.5); backdrop-filter: blur(4px); }
+.pro-panel {
+  position: relative;
+  width: min(400px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: rgba(var(--glass-rgb), 0.82);
+  backdrop-filter: blur(calc(20px * var(--blur-k))) saturate(1.06);
+  box-shadow: 0 30px 70px -26px rgba(0, 0, 0, 0.82);
+  color: var(--ink);
+  animation: rise 200ms var(--ease) both;
+}
+.pro-head { display: flex; align-items: center; gap: 10px; }
+.pro-tag { padding: 2px 7px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; }
+.pro-title { flex: 1; margin: 0; font-size: 16px; font-weight: 600; }
+.pro-x {
+  width: 26px; height: 26px; flex: 0 0 auto;
+  border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06); color: var(--ink-soft);
+  font: inherit; font-size: 11px; cursor: pointer;
+}
+.pro-x:hover { background: rgba(255, 255, 255, 0.14); color: var(--ink); }
+.pro-text { margin: 12px 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+.pro-sub { margin: 10px 0 0; font-size: 12px; color: var(--accent); }
+.pro-perks { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
+.pro-perks li { display: flex; gap: 8px; }
+.pro-perks li::before { content: "✓"; color: var(--accent); font-weight: 700; }
+.pro-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.pro-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--line-hi);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font: inherit; font-size: 12.5px; font-weight: 600;
+  cursor: pointer;
+}
+.pro-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.pro-btn:disabled { opacity: 0.6; cursor: default; }
+.pro-btn.is-primary { border-color: transparent; background: var(--accent); color: var(--on-accent); }
+.pro-btn.is-primary:hover { filter: brightness(1.06); }
+.pro-btn.is-quiet { border-color: transparent; background: none; color: var(--ink-faint); }
+.pro-err { margin: 10px 0 0; font-size: 12px; color: #ff9b9b; }
+
+.pro-welcome {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  z-index: 70;
+  width: min(420px, calc(100vw - 32px));
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: rgba(var(--glass-rgb), 0.78);
+  backdrop-filter: blur(calc(20px * var(--blur-k))) saturate(1.06);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.8);
+  color: var(--ink);
+  transform: translateX(-50%);
+  animation: pro-in 320ms var(--ease) both;
+}
+.pro-welcome.is-leaving { animation: pro-out 240ms var(--ease) both; }
+.pro-welcome .pro-x { position: absolute; top: 10px; right: 10px; }
+.pro-welcome-date { margin: 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+.pro-welcome-title { margin: 4px 28px 0 0; font-size: 17px; font-weight: 600; }
+.pro-welcome .pro-text { margin-top: 8px; }
+@keyframes pro-in { from { opacity: 0; transform: translate(-50%, -12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes pro-out { to { opacity: 0; transform: translate(-50%, -12px); } }
+@media (prefers-reduced-motion: reduce) {
+  .pro-panel, .pro-welcome, .pro-welcome.is-leaving { animation: none; }
+}

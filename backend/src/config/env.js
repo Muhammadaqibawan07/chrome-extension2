@@ -20,6 +20,8 @@ export const env = {
      Anything else (or unset): the Pro plan is on. The extension reads this
      through GET /config, so this is the only switch. */
   allFree: process.env.ALL_FREE === "true",
+  /* days of Pro a new account gets for free (0 = no trial) */
+  trialDays: int(process.env.TRIAL_DAYS, 7),
 
   geminiKey: process.env.GEMINI_API_KEY || "",
   geminiModel: process.env.GEMINI_MODEL || "gemini-3.1-flash-lite",
