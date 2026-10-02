@@ -197,7 +197,7 @@ export function NewTabMock({ wall = "meadow" }: { wall?: string }) {
           <i />
           <i />
           <span className="nt-url">
-            <img src="/media/logo-256.png" alt="" /> New Tab
+            <img src="/media/icon.png" alt="" /> New Tab
           </span>
         </div>
         <div className="nt-body">
@@ -295,7 +295,7 @@ export function CommandMock() {
     ],
     [
       ["Next wallpaper", "Live · 4K", I.sun],
-      ["Online library", "Wallhaven & Pixabay", I.globe],
+      ["Online library", "Live and 4K wallpapers", I.globe],
       ["Wallpaper schedule", "Mornings & evenings", I.moon],
     ],
     [
@@ -741,7 +741,7 @@ export function SyncMock() {
         <i />
       </span>
       <span className="dev hub">
-        <img src="/media/logo-256.png" alt="" />
+        <img src="/media/icon.png" alt="" />
       </span>
       <span className="wire">
         <i />

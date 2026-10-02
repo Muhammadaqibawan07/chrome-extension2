@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { AnimeLovers } from "@/components/site/anime";
 import { Footer, InstallButton, Nav, Reveal, useTheme } from "@/components/site/layout";
 import {
   AppIcon,
@@ -64,6 +65,7 @@ function Home() {
       <Shortcuts />
       <Numbers />
       <Look />
+      <AnimeLovers />
       <GetAround />
       <GetDone />
       <Control />
@@ -769,10 +771,10 @@ function Faq() {
 function Closing() {
   return (
     <section className="closing">
-      <Loop src="/media/wp/storm.mp4" poster="/media/wp/storm.jpg" className="closing-video" />
+      <Loop src="/media/closing.mp4" poster="/media/closing.jpg" className="closing-video" />
       <div className="closing-shade" />
       <div className="wrap closing-inner">
-        <img src="/media/logo-256.png" alt="" className="closing-logo" width={84} height={84} />
+        <img src="/media/icon.png" alt="" className="closing-logo" width={84} height={84} />
         <h2 className="display small">
           Open a new tab.
           <br />
