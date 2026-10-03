@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AnimeLovers } from "@/components/site/anime";
+import { Developers } from "@/components/site/developers";
 import { Footer, InstallButton, Nav, Reveal, useTheme } from "@/components/site/layout";
 import {
   AppIcon,
@@ -71,6 +72,7 @@ function Home() {
       <Control />
       <Themes />
       <Pricing />
+      <Developers />
       <Faq />
       <Closing />
       <Footer />

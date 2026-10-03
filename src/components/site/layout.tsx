@@ -102,6 +102,7 @@ export function Nav() {
           <a href="/#themes">Themes</a>
           <a href="/#pricing">Pricing</a>
           <a href="/#faq">FAQ</a>
+          <a href="/#team">Team</a>
         </nav>
         <InstallButton className="btn-sm">{STORE_URL ? "Add to Chrome" : "Download"}</InstallButton>
       </div>
