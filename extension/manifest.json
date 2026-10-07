@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Atlas New Tab - Taha",
+  "name": "Atlas New Tab",
   "version": "1.0.1",
   "description": "A calm, editorial new tab with cinematic live wallpapers, shortcut cards, search and a compact assistant.",
   "permissions": ["storage", "scripting", "alarms", "notifications", "offscreen", "identity", "declarativeNetRequestWithHostAccess", "idle"],

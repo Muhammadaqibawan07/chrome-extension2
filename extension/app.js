@@ -4055,6 +4055,22 @@
     AS.open();
   });
 
+  /* wallpapers and their library previews can't be saved the easy ways: no
+     "Save image / video as" or "Copy address" menu, no dragging them out,
+     no picture-in-picture or casting */
+  const WP_MEDIA = ".wallpaper, .cz-pwp, .cz-pwps";
+  document.addEventListener("contextmenu", (e) => {
+    if (e.target instanceof Element && e.target.closest(WP_MEDIA) && !e.target.closest("a[href]")) e.preventDefault();
+  });
+  document.addEventListener("dragstart", (e) => {
+    if (e.target instanceof Element && e.target.matches("img, video") && e.target.closest(WP_MEDIA)) e.preventDefault();
+  });
+  document.querySelectorAll(".wallpaper video").forEach((v) => {
+    v.disablePictureInPicture = true;
+    v.setAttribute("disableremoteplayback", "");
+    v.setAttribute("controlslist", "nodownload noplaybackrate noremoteplayback");
+  });
+
   /* ================= SETTINGS -> BEHAVIOUR ===============================
      customize.js restyles the page itself; these are the settings that need
      the app to act. "*" means many changed at once (preset, reset, import). */

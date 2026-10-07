@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { protectMedia } from "../lib/protect-media";
 
 function NotFoundComponent() {
   return (
@@ -78,6 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "theme-color", content: "#0b0b0d" },
+      { name: "google-site-verification", content: "y1ALZ1iQLQCv429U12PP4sYjntLliOuluswSj714mZ8" },
       { title: "Atlas — a new tab worth opening" },
       { name: "description", content: "Live wallpapers, shortcuts in glass cards, workspaces and quick tools for Chrome's new tab." },
       { property: "og:type", content: "website" },
@@ -120,6 +122,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(protectMedia, []);
 
   return (
     <QueryClientProvider client={queryClient}>
