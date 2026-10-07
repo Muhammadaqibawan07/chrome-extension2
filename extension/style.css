@@ -55,6 +55,8 @@ html, body {
 
 /* ---------- wallpaper ---------- */
 .wallpaper { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #14141a; }
+/* the wallpaper and library previews can't be dragged out or long-pressed to save */
+.wallpaper img, .wallpaper video, .cz-pwp img { -webkit-user-drag: none; user-select: none; -webkit-touch-callout: none; }
 
 /* each layer sits in a slot. The incoming one is raised on top (.is-top)
    and settles in from a slight zoom while it fades in (app.js), so the old
