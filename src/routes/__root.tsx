@@ -79,6 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "theme-color", content: "#0b0b0d" },
+      { name: "google-site-verification", content: "y1ALZ1iQLQCv429U12PP4sYjntLliOuluswSj714mZ8" },
       { title: "Atlas — a new tab worth opening" },
       { name: "description", content: "Live wallpapers, shortcuts in glass cards, workspaces and quick tools for Chrome's new tab." },
       { property: "og:type", content: "website" },
