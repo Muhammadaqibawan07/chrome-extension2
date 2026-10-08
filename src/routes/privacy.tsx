@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { DocPage } from "@/components/site/layout";
+import { seo } from "@/lib/seo";
 import { CONTACT_EMAIL } from "@/lib/site";
 
 export const Route = createFileRoute("/privacy")({
-  head: () => ({ meta: [{ title: "Privacy — Atlas" }, { name: "description", content: "What Atlas New Tab stores, what it sends and to whom." }] }),
+  head: () => seo({ path: "/privacy", title: "Privacy policy — Atlas New Tab", description: "What Atlas New Tab stores, what it sends and to whom." }),
   component: Privacy,
 });
 
