@@ -59,7 +59,8 @@ function Privacy() {
           account ID, email address, name and profile picture.
         </li>
         <li>
-          <b>Google Calendar, read-only</b> (scope <code>calendar.readonly</code>, only if you allow it): the list of
+          <b>Google Calendar, read-only</b> (scopes <code>calendar.events.readonly</code> and{" "}
+          <code>calendar.calendarlist.readonly</code>, only if you allow it): the list of
           calendars you have selected in Google Calendar (ID and colour), and for today and the next 7 days each event's
           title, start and end time, whether it's all-day, location, link to the event, Google Meet link, and whether
           you declined it. Atlas never creates, edits or deletes calendar events and doesn't read event descriptions,
@@ -90,6 +91,20 @@ function Privacy() {
           which passes them to Google's Gemini API to produce the plan. They aren't stored or logged by us.
         </li>
         <li>We may disclose data only if required by law, or as part of a merger or acquisition with your notice.</li>
+      </ul>
+
+      <h3>AI processing of Google user data</h3>
+      <p>
+        The day planner uses one AI provider: Google's Gemini API (a Gemini Flash model), called directly from our server
+        on Google's paid API tier. No aggregator, gateway or other AI provider is involved, and no self-hosted model is used.
+      </p>
+      <ul>
+        <li>Only the title and start/end time of the events on the day being planned are sent, and only when you press "Plan my day".</li>
+        <li>
+          Under the paid Gemini API terms, Google does not use these prompts or responses to train or improve its models.
+          We don't store them, and we never use Google user data, raw, aggregated, anonymized or derived, to create, train
+          or improve any AI or machine-learning model.
+        </li>
       </ul>
 
       <h3>How we protect it</h3>
@@ -126,7 +141,8 @@ function Privacy() {
 
       <h3>Limited Use</h3>
       <p>
-        Atlas's use and transfer of information received from Google APIs to any other app will adhere to the{" "}
+        The use of raw or derived user data received from Google Workspace APIs (Google Calendar), and Atlas's use and
+        transfer of information received from Google APIs to any other app, will adhere to the{" "}
         <a href="https://developers.google.com/terms/api-services-user-data-policy">
           Google API Services User Data Policy
         </a>
