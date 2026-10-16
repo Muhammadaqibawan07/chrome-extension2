@@ -19,15 +19,12 @@ import {
   LightMock,
   NewTabMock,
   PlannerMock,
-  PlayingMock,
   QuoteMock,
   RemindMock,
   SearchMock,
   StatsMock,
   SyncMock,
-  TabsMock,
   TranslateMock,
-  BlockMock,
   VaultMock,
   VoiceMock,
   ZenMock,
@@ -165,7 +162,7 @@ function Hero() {
           </h1>
           <p className="lede rise" style={{ animationDelay: "200ms" }}>
             A free new tab extension for Chrome: live 4K wallpapers, your sites in glass cards, a command center, focus
-            timer, reminders, habits, a site blocker, translation and a quiet assistant. One new tab, twenty small tools.
+            timer, reminders, habits and a quiet assistant. Everything lives on your new tab page.
           </p>
           <div className="hero-ctas rise" style={{ animationDelay: "280ms" }}>
             <InstallButton />
@@ -289,9 +286,9 @@ function Numbers() {
     <section className="nums">
       <div className="wrap nums-row">
         {[
-          [20, "+", "built-in tools"],
+          [15, "+", "built-in tools"],
           [8, "", "theme presets"],
-          [10, "", "search engines, plus your own"],
+          [5, "", "one-key site searches"],
           [0, "", "ads or trackers"],
         ].map(([n, s, l], i) => (
           <Reveal className="num" key={l as string} delay={i * 80}>
@@ -456,20 +453,14 @@ function GetAround() {
             <CommandMock />
           </Card>
           <Card className="span-2">
-            <CardCopy tag="Search" title="Ten engines and bangs">
-              Pick the engine from the bar, or send one search elsewhere with !yt, !gh or !w.
+            <CardCopy tag="Search" title="Your search engine, plus bangs">
+              The bar uses your browser's default search engine. Send one search to a site with !yt, !gh or !w.
             </CardCopy>
             <SearchMock />
           </Card>
-          <Card className="span-2" delay={80}>
-            <CardCopy tag="Now playing" title="Pause the music without hunting for the tab">
-              Spotify, YouTube, SoundCloud and more, with artwork and a seek bar.
-            </CardCopy>
-            <PlayingMock />
-          </Card>
-          <Card className="span-2" delay={160}>
-            <CardCopy tag="Translate" title="Read any site in your language">
-              Pages translate as they load. One click shows the original.
+          <Card className="span-4" delay={80}>
+            <CardCopy tag="Translate" title="Your new tab, in your language">
+              Atlas shows its own new tab page in any of dozens of languages.
             </CardCopy>
             <TranslateMock />
           </Card>
@@ -487,8 +478,8 @@ function GetDone() {
         <Chapter id="done-h" n="03" kicker="Get things done" title="A quiet desk," em="not another app." />
         <div className="bento">
           <Card className="span-2 tall">
-            <CardCopy tag="Focus timer" title="25 on, 5 off, distractions blocked">
-              While you focus, the blocker's list is shut and the wallpaper dims. It ends on time even with no tab open.
+            <CardCopy tag="Focus timer" title="25 on, 5 off, then a break">
+              While you focus, the wallpaper dims. It ends on time even with no tab open.
             </CardCopy>
             <FocusMock />
           </Card>
@@ -529,8 +520,8 @@ function GetDone() {
             <CalendarMock />
           </Card>
           <Card className="span-2" delay={160}>
-            <CardCopy tag="Stats" title="Where the time actually went">
-              Focus, tasks, habits and your top sites. Pro adds 30 days and a weekly email.
+            <CardCopy tag="Stats" title="See your progress add up">
+              Focus, tasks and habits by day. Pro adds 30 days and a weekly email.
             </CardCopy>
             <StatsMock />
           </Card>
@@ -545,20 +536,8 @@ function Control() {
   return (
     <section className="section tint" id="control">
       <div className="wrap">
-        <Chapter id="control-h" n="04" kicker="Stay in control" title="Calmer browsing," em="on your terms." />
+        <Chapter id="control-h" n="04" kicker="Stay in control" title="A calmer new tab," em="on your terms." />
         <div className="bento">
-          <Card className="span-3">
-            <CardCopy tag="Site blocker" title="Block the rabbit holes">
-              Single sites or one-click groups, always or only at set times, with your own message.
-            </CardCopy>
-            <BlockMock />
-          </Card>
-          <Card className="span-3" delay={80}>
-            <CardCopy tag="Optimize & tab manager" title="Fewer tabs, less memory">
-              Close duplicates, put idle tabs to sleep, save a window as a session and open it later.
-            </CardCopy>
-            <TabsMock />
-          </Card>
           <Card className="span-2">
             <CardCopy tag="Private space · Pro" title="A locked folder for private links">
               Password-protected shortcuts and notes, encrypted on your computer.
@@ -580,11 +559,11 @@ function Control() {
         </div>
         <Reveal className="extras">
           {[
-            ["Extensions manager", "Turn your other extensions on and off"],
+            ["Zen clock", "Just the time over your wallpaper"],
             ["Weather", "Your city, in °C or °F"],
-            ["Quick Peek", "Glance at your tabs from the corner"],
+            ["Quick Peek", "Your most-used shortcuts in the corner"],
             ["Backup", "Export and import as a file"],
-            ["Own search engines", "Add any site with a %s link"],
+            ["Daily quote", "A new one each day, or your own"],
             ["Widgets", "Move and resize everything"],
           ].map(([t, s]) => (
             <span key={t}>
@@ -676,7 +655,7 @@ function Themes() {
           </div>
           <div className="mini-search glass">
             <Icon d={I.search} size={14} />
-            Search Google…
+            Search the web…
           </div>
         </Reveal>
       </div>
@@ -689,9 +668,9 @@ const FREE = [
   "Live and still wallpapers (5 from the online library)",
   "Shortcut cards and workspaces",
   "Command Center, search bangs, voice typing",
-  "Focus timer, reminders, site blocker",
-  "Notes & goals, 3 habits, 3 tab sessions",
-  "Translate, now playing, weather, daily quote",
+  "Focus timer and reminders",
+  "Notes & goals, 3 habits",
+  "Translate the new tab, weather, daily quote",
   "Assistant, 20 messages a day",
 ];
 const PRO = [
@@ -701,7 +680,7 @@ const PRO = [
   "Automatic sync and backup",
   "AI day planner and Google Calendar",
   "30-day stats and a weekly email",
-  "30 habits and 50 saved tab sessions",
+  "30 habits",
   "Assistant, 500 messages a day",
 ];
 
@@ -776,11 +755,11 @@ function Pricing() {
 
 /* ---------- FAQ ---------- */
 const FAQ = [
-  ["What is Atlas New Tab?", "Atlas is a free new tab extension for Chrome. It replaces the blank new tab page with live 4K and HD wallpapers, a customizable dashboard of your favourite sites, and productivity tools: a focus timer, reminders, habits, notes and goals, and a site blocker. It also works in Edge, Brave and other Chromium browsers."],
+  ["What is Atlas New Tab?", "Atlas is a free new tab extension for Chrome. It replaces the blank new tab page with live 4K and HD wallpapers, a customizable dashboard of your favourite sites, and productivity tools: a focus timer, reminders, habits, and notes and goals. It also works in Edge, Brave and other Chromium browsers."],
   ["How do I change the Chrome new tab background?", "Install Atlas and open a new tab. In Customize › Background, pick one of the built-in live wallpapers, browse the online library of 4K stills and live videos, or upload your own image or .mp4."],
   ["Can I make the new tab minimal?", "Yes. Press Z for the Zen clock, just the time over your wallpaper, or M for minimal mode, which hides everything but the search bar."],
   ["Is Atlas really free?", "Yes. The free version has no time limit and no ads. Pro adds extra themes, unlimited wallpapers, sync, the private space and a few power tools, and it pays for the servers."],
-  ["What does Atlas know about my browsing?", "Your shortcuts, settings and screen-time stats stay in your browser. Stats only note which site is in front and for how long (the domain, never the page), and they're only uploaded if you turn on the weekly email. The privacy policy lists everything that leaves your computer."],
+  ["What does Atlas know about my browsing?", "Nothing. Atlas only runs on its own new tab page: it can't read or change the websites you visit and keeps no browsing history. Your shortcuts, settings and stats (focus, tasks and habits) stay in your browser. The privacy policy lists everything that leaves your computer."],
   ["Do reminders and the focus timer work with no new tab open?", "Yes. They run in the extension's background worker, so a reminder rings and a focus session ends on time wherever you are in Chrome. A reminder missed while Chrome was closed rings when it opens again (up to 12 hours late)."],
   ["Which browsers does it work in?", "Any Chromium browser that installs Chrome Web Store extensions: Chrome, Edge, Brave, Arc, Opera and Vivaldi."],
   ["Is the private space really private?", "Its contents are encrypted on your computer with your password (PBKDF2 and AES-GCM). With sync on, only the encrypted copy is uploaded. That also means the password can't be recovered, so keep it somewhere safe."],

@@ -168,8 +168,10 @@ const DEFAULT_WORKSPACES = [
   },
 ];
 
-/* ---------- 4. SEARCH ------------------------------------------ */
-const SEARCH_URL = "https://www.google.com/search?q=";
+/* ---------- 4. SEARCH ------------------------------------------
+   The search bar always uses the browser's default search engine
+   (chrome.search), so there is no search URL to set here. Site searches
+   (!yt, !gh, ...) are listed in customize.js ENGINES.               */
 
 /* ---------- 5. AI ASSISTANT ------------------------------------
    By default the assistant is NOT configured and will politely say so.
@@ -212,14 +214,12 @@ const ACCOUNT_CONFIG = {
    freeHabits:    habits a free account can track
    freeStatsDays: days of the stats dashboard a free account sees
                   (1 = today only; Pro sees 30 days and the weekly email)
-   freeSessions:  tab sessions a free account can save (Quick tools →
-                  Tab manager)
    freeWallpapers: wallpapers a free account can choose — built-in, online
                   stills and live together (the first built-in one is
                   always free and doesn't count).
                   Also Pro: every theme preset but the first, customizing
                   the theme (colours, glass, font), every cursor but
-                  System, the site blocker, the private space (Privacy
+                  System, the private space (Privacy
                   tab), voice typing and the assistant's voice, and backup
                   (pro.js). New accounts get Pro free for TRIAL_DAYS
                   (backend .env); after that these need a subscription.
@@ -231,7 +231,6 @@ const PRO_CONFIG = {
   allFree: false,
   freeHabits: 3,
   freeStatsDays: 1,
-  freeSessions: 3,
   freeWallpapers: 5,
   /* shown on the upgrade box until the server answers with Paddle's real
      prices (GET /billing/plans); keep them in step with Paddle */
@@ -245,13 +244,14 @@ const PRO_CONFIG = {
    The footer of Quick tools: Feedback, Rate us, Share and the links.
    storeUrl:   the Chrome Web Store page; "" = worked out from the
                extension's id once it's published
-   siteUrl:    the marketing site (repo root, on Vercel), no trailing slash
+   siteUrl:    the marketing site (repo root), no trailing slash; its
+               /privacy, /terms and /refunds pages are linked in the footer
    privacyUrl: "" = <siteUrl>/privacy, or the backend's /privacy.html  */
 const ABOUT_CONFIG = {
   feedbackEmail: "muhammadaqibawan07@gmail.com",
   storeUrl: "",
-  siteUrl: "",
-  privacyUrl: "",
+  siteUrl: "https://atlas.aqibawan.com",
+  privacyUrl: "https://atlas.aqibawan.com/privacy",
 };
 
 /* ---------- 6. WEATHER -----------------------------------------

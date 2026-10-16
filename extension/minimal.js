@@ -21,7 +21,6 @@
     weather: ".weather",
     search: "#search",
     dock: "#rail, #launcher",
-    media: "#media",
     /* the Zen clock button; the minimal button beside it stays, as the way back */
     wallpaper: "#zenBtn",
     peek: "#peek",

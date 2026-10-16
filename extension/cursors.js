@@ -1,8 +1,7 @@
 /* ATLAS NEW TAB — cursors
    The cursor packs, the user's own uploaded cursors, and the CSS that
-   applies one. Shared by the new tab (customize.js) and every website
-   (cursor-apply.js), so both always draw the same cursor from the same
-   settings.
+   applies one on the new tab page (customize.js). Atlas never changes
+   the cursor on other websites.
 
    Each cursor has a normal image and a pointer image (links, buttons).
    Shapes are drawn on a 32×32 grid; hot spots are the click point on that
@@ -179,7 +178,6 @@
   const defaults = () => ({
     style: "default", // a pack id, or "custom:<id>"
     size: 32,
-    everywhere: true,
     custom: [],       // [{ id, name, normal, pointer, hot }]
     looks: {},        // { [pack id | custom id]: partial look }
   });
@@ -223,7 +221,6 @@
     const out = defaults();
     if (!raw || typeof raw !== "object") return out;
     out.size = Math.round(clamp(raw.size, 16, 96, 32));
-    if (typeof raw.everywhere === "boolean") out.everywhere = raw.everywhere;
 
     const seen = new Set();
     (Array.isArray(raw.custom) ? raw.custom : []).forEach((c) => {
@@ -339,8 +336,8 @@
     "[contenteditable=\"\"]", "[contenteditable=true]",
   ].join(",");
 
-  /* elements a site gave cursor: pointer / default, marked on hover by
-     cursor-apply.js */
+  /* elements that have their own cursor: pointer / default, marked on hover by
+     watch() */
   const MARKED_POINTER = "[data-atlas-cur=p]";
   const MARKED_NORMAL = "[data-atlas-cur=n]";
 

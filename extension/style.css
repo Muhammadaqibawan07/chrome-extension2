@@ -2764,7 +2764,6 @@ select option:checked { background: #2d3a4d; color: #fff; }
 .rail .trace rect { animation-delay: -2.7s; }
 .weather .trace rect { animation-delay: -5.3s; }
 .search { --trace-rx: 21.25px; }         /* 44px pill */
-.media { --trace-rx: calc(var(--r-lg) - 1.75px); }
 
 /* assistant bubble breathes until it is first opened */
 @keyframes bubble-pulse {
@@ -2788,183 +2787,6 @@ select option:checked { background: #2d3a4d; color: #fff; }
 .peek-panel a:hover { transform: translateX(2px); }
 .wp-toggle { transition: color 180ms var(--ease), background 180ms var(--ease), transform 320ms var(--ease); }
 .wp-toggle:hover { transform: rotate(180deg); }
-
-/* ---------- now playing (bottom left, above the wallpaper toggle) ----------
-   Same glass as the rest of the page. */
-.media {
-  position: fixed;
-  z-index: 2;
-  left: var(--edge);
-  bottom: calc(var(--edge) + 42px);
-  width: var(--card-w);
-  padding: 11px 12px 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  backdrop-filter: blur(calc(10px * var(--blur-k))) saturate(1.05);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  animation: fade-up 520ms var(--ease) both;
-  transition: background 240ms var(--ease), border-color 240ms var(--ease);
-}
-.media[hidden] { display: none; }
-.media:hover { background: var(--surface-hi); border-color: var(--line-hi); }
-
-/* the launcher stops above the widget instead of running under it */
-body.has-media {
-  --launcher-bottom: calc(var(--edge) + 42px + var(--media-h, 120px) + 16px);
-}
-
-.media-top {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.media-art {
-  position: relative;
-  flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--r-sm);
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.32), rgba(255, 255, 255, 0.06));
-  box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.55);
-}
-.media-art img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.media-art-fallback { font-size: 17px; color: var(--ink-soft); }
-.media-meta { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.media-title,
-.media-artist {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.media-title { font-size: 12.5px; font-weight: 600; letter-spacing: 0.01em; color: var(--ink); }
-.media-artist { font-size: 11px; color: var(--ink-faint); }
-.media-top:hover .media-title { text-decoration: underline; text-underline-offset: 2px; }
-
-/* little equalizer: moves while playing, settles when paused */
-.media-eq {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 18px;
-  margin-right: 2px;
-}
-.media-eq i {
-  width: 2.5px;
-  height: 100%;
-  border-radius: 2px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 28%, white), rgba(var(--accent-rgb), 0.55));
-  transform-origin: bottom;
-  animation: eq 900ms ease-in-out infinite alternate;
-}
-.media-eq i:nth-child(2) { animation-duration: 700ms; animation-delay: -200ms; }
-.media-eq i:nth-child(3) { animation-duration: 1100ms; animation-delay: -500ms; }
-.media-eq i:nth-child(4) { animation-duration: 800ms; animation-delay: -350ms; }
-.media-eq i:nth-child(5) { animation-duration: 1000ms; animation-delay: -650ms; }
-@keyframes eq {
-  from { transform: scaleY(0.25); }
-  to { transform: scaleY(1); }
-}
-.media.is-paused .media-eq i { animation: none; transform: scaleY(0.2); opacity: 0.6; }
-
-.media-bar {
-  position: relative;
-  height: 3px;
-  margin: 10px 0 5px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  transition: height 160ms var(--ease);
-}
-.media-bar.is-seekable { cursor: pointer; }
-.media-bar.is-seekable:hover { height: 5px; }
-/* a taller invisible hit area so the thin bar is easy to click */
-.media-bar::before { content: ""; position: absolute; inset: -6px 0; }
-.media-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.7), color-mix(in srgb, var(--accent) 28%, white));
-  transition: width 500ms linear;
-}
-
-.media-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.media-time {
-  min-width: 34px;
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: var(--ink-faint);
-  font-variant-numeric: tabular-nums;
-}
-.media-time:last-child { text-align: right; }
-.media-ctrls { display: flex; align-items: center; gap: 4px; }
-.media-btn {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-  transition: background 160ms var(--ease), color 160ms var(--ease), transform 160ms var(--ease);
-}
-.media-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); color: var(--ink); }
-.media-btn:active:not(:disabled) { transform: scale(0.92); }
-.media-btn:disabled { opacity: 0.32; cursor: default; }
-.media-btn:focus-visible,
-.media-top:focus-visible { outline: 1px solid var(--line-hi); outline-offset: 2px; }
-.media-btn.is-main {
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid var(--line);
-  color: var(--ink);
-}
-.media-btn.is-main:hover { background: rgba(255, 255, 255, 0.22); }
-.media-btn .i-play { display: none; margin-left: 2px; }
-.media.is-paused .media-btn .i-play { display: block; }
-.media.is-paused .media-btn .i-pause { display: none; }
-
-/* tablet + phone: the widget sits above the search bar */
-@media (max-width: 1024px) {
-  .media {
-    bottom: calc(var(--edge) + 56px);
-    width: min(320px, calc(100vw - 2 * var(--edge)));
-  }
-  body.has-media {
-    --launcher-bottom: calc(var(--edge) + 56px + var(--media-h, 120px) + 12px);
-  }
-}
-/* phone: full width */
-@media (max-width: 720px) {
-  .media { right: var(--edge); width: auto; }
-}
-/* landscape phones have no vertical room for it */
-@media (max-height: 460px) and (orientation: landscape) {
-  .media { display: none; }
-  body.has-media { --launcher-bottom: calc(var(--edge) + 58px); }
-}
 
 /* ---------- high-resolution polish ---------- */
 @media (min-width: 2400px) {
@@ -3886,11 +3708,9 @@ textarea.qt-input { resize: vertical; line-height: 1.45; }
 /* in minimal mode the Zen button steps out; minimal stays as the way back */
 #zenBtn.min-hidden { display: none; }
 
-/* desktop: the 40px bubbles push Now playing and the dock's free space up */
+/* desktop: the 40px bubbles push the dock's free space up */
 @media (min-width: 1025px) {
-  .media { bottom: calc(var(--edge) + 54px); }
   :root { --launcher-bottom: calc(var(--edge) + 64px); }
-  body.has-media { --launcher-bottom: calc(var(--edge) + 54px + var(--media-h, 120px) + 16px); }
 }
 
 /* ---------- focus timer (focus.js) ---------- */

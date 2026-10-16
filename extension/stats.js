@@ -1,7 +1,7 @@
 /* ATLAS NEW TAB — stats dashboard
-   Your time in one place: time on each site (background.js counts it in
-   "stats:days"), focus sessions ("focus:history"), tasks done ("qt:tasks")
-   and habits ticked off ("qt:habits"), and blocked sites opened.
+   Your progress in one place: focus sessions ("focus:history"), tasks
+   done ("qt:tasks") and habits ticked off ("qt:habits"), all made on the
+   new tab itself. Nothing about other websites is recorded.
    Free accounts see today (PRO_CONFIG.freeStatsDays); Pro sees 7 and 30
    days and can turn on the Monday summary email — for that, this page
    sends the backend this week's and last week's numbers (PUT /stats/week),
@@ -39,24 +39,14 @@
     if (m < 60) return m + "m";
     return Math.floor(m / 60) + "h" + (m % 60 ? " " + (m % 60) + "m" : "");
   };
-  const fmtSecs = (s) => (s < 60 && s > 0 ? "<1m" : fmtMin(s / 60));
 
   /* ---------- the numbers ---------- */
   async function collect(days) {
-    const o = await read(["stats:days", "focus:history", "qt:tasks", "qt:habits"]);
-    const raw = o["stats:days"] || {};
+    const o = await read(["focus:history", "qt:tasks", "qt:habits"]);
     const hist = Array.isArray(o["focus:history"]) ? o["focus:history"] : [];
     const set = new Set(days);
     const per = {};
-    days.forEach((k) => (per[k] = { date: k, browse: 0, focus: 0, sessions: 0, tasks: 0, habits: 0, blocked: 0 }));
-    const sites = {};
-    const blocked = {};
-    days.forEach((k) => {
-      const d = raw[k];
-      if (!d) return;
-      Object.entries(d.t || {}).forEach(([host, secs]) => { per[k].browse += secs; sites[host] = (sites[host] || 0) + secs; });
-      Object.entries(d.b || {}).forEach(([host, n]) => { per[k].blocked += n; blocked[host] = (blocked[host] || 0) + n; });
-    });
+    days.forEach((k) => (per[k] = { date: k, focus: 0, sessions: 0, tasks: 0, habits: 0 }));
     hist.forEach((s) => {
       const k = ymd(new Date(s.start));
       if (!set.has(k)) return;
@@ -76,10 +66,8 @@
     const totals = list.reduce((a, d) => {
       Object.keys(a).forEach((key) => (a[key] += d[key]));
       return a;
-    }, { browse: 0, focus: 0, sessions: 0, tasks: 0, habits: 0, blocked: 0 });
-    const top = Object.entries(sites).sort((a, b) => b[1] - a[1]).map(([host, secs]) => ({ host, secs }));
-    const topBlocked = Object.entries(blocked).sort((a, b) => b[1] - a[1]).map(([host, n]) => ({ host, n }));
-    return { days: list, totals, top, topBlocked };
+    }, { focus: 0, sessions: 0, tasks: 0, habits: 0 });
+    return { days: list, totals };
   }
 
   /* ---------- the weekly email: send the numbers ---------- */
@@ -101,8 +89,7 @@
       weeks.push({
         week: ymd(mon),
         data: {
-          days: r.days.map((d) => ({ date: d.date, browse: d.browse, focus: d.focus, tasks: d.tasks, habits: d.habits, blocked: d.blocked })),
-          top: r.top.slice(0, 5),
+          days: r.days.map((d) => ({ date: d.date, focus: d.focus, tasks: d.tasks, habits: d.habits })),
           totals: r.totals,
           streak,
         },
@@ -136,7 +123,7 @@
     h("div", { class: "st-scrim", onclick: () => close() }),
     h("section", { class: "st-card" },
       h("header", { class: "st-head" },
-        h("div", {}, h("h2", { class: "st-title", text: "Your stats" }), h("p", { class: "st-sub", text: "Time, focus and progress — kept on this computer" })),
+        h("div", {}, h("h2", { class: "st-title", text: "Your stats" }), h("p", { class: "st-sub", text: "Focus and progress — kept on this computer" })),
         seg,
         h("button", { type: "button", class: "ai-icon-btn st-x", "aria-label": "Close", title: "Close", text: "✕", onclick: () => close() })),
       body));
@@ -192,20 +179,6 @@
       chart);
   }
 
-  function siteList(title, rows, value, fmt, empty) {
-    const max = Math.max(1, ...rows.map(value));
-    return h("section", { class: "st-panel" },
-      h("div", { class: "st-ptitle" }, h("h3", { text: title })),
-      rows.length ? h("ol", { class: "st-sites" }, rows.map((r) => {
-        const bar = h("span", { class: "st-sbar" });
-        bar.style.width = Math.max(2, (value(r) / max) * 100) + "%";
-        return h("li", {},
-          h("span", { class: "st-host", text: r.host, translate: "no" }),
-          h("span", { class: "st-strack" }, bar),
-          h("span", { class: "st-val", text: fmt(value(r)) }));
-      })) : h("p", { class: "qt-empty", text: empty }));
-  }
-
   async function emailPanel() {
     const A = Acc();
     const panel = h("section", { class: "st-panel st-email" });
@@ -248,7 +221,7 @@
     if (locked) {
       const QT = window.AtlasQuickTools;
       body.append(h("div", { class: "st-locked" },
-        QT && QT.upgradeNote ? QT.upgradeNote("Your last " + range + " days — focus by day, where your time went, your best days — are part of Atlas Pro, with a weekly summary email.") : null));
+        QT && QT.upgradeNote ? QT.upgradeNote("Your last " + range + " days — focus by day and your best days — are part of Atlas Pro, with a weekly summary email.") : null));
       return;
     }
     const t = r.totals;
@@ -258,17 +231,12 @@
       tile(fmtMin(t.focus), "focused", per(t.focus, fmtMin)),
       tile(String(t.sessions), "focus sessions", window.AtlasFocus ? AtlasFocus.streak() + "-day streak" : null),
       tile(String(t.tasks), "tasks done"),
-      tile(String(t.habits), "habits ticked off"),
-      tile(fmtSecs(t.browse), "on the web", per(t.browse, fmtSecs)),
-      tile(String(t.blocked), "blocked visits")));
+      tile(String(t.habits), "habits ticked off")));
     if (n > 1) {
       body.append(h("div", { class: "st-grid" },
         dayChart("Focus by day", r.days, (d) => d.focus, fmtMin),
-        dayChart("Time on the web by day", r.days, (d) => d.browse / 60, fmtMin)));
+        dayChart("Tasks done by day", r.days, (d) => d.tasks, String)));
     }
-    body.append(h("div", { class: "st-grid" },
-      siteList("Where your time went", r.top.slice(0, 10), (x) => x.secs, fmtSecs, "Nothing yet — time on each site shows up as you browse."),
-      siteList("Most blocked", r.topBlocked.slice(0, 6), (x) => x.n, (v) => v + (v === 1 ? " visit" : " visits"), "No blocked sites opened. Nice.")));
     body.append(await emailPanel());
   }
 

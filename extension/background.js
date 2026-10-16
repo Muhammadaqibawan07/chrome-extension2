@@ -1,139 +1,8 @@
 /* ATLAS NEW TAB — background worker
-   Keeps one entry per frame (tab + embedded player) that is playing (or
-   has played) media, picks the
-   one to show, and pushes it to any open new tab. Stored in
-   storage.session so it survives the worker going to sleep. */
+   Everything here serves the new tab page: reminders and the focus timer
+   ring on time with no new tab open, the new tab's own text is
+   translated, and stats and sync keep their records. */
 "use strict";
-
-const KEY = "media:sessions";
-
-const SOURCES = [
-  ["open.spotify.com", "Spotify"],
-  ["music.youtube.com", "YouTube Music"],
-  ["youtube.com", "YouTube"],
-  ["soundcloud.com", "SoundCloud"],
-  ["deezer.com", "Deezer"],
-  ["music.apple.com", "Apple Music"],
-  ["music.amazon.", "Amazon Music"],
-  ["tidal.com", "TIDAL"],
-  ["pandora.com", "Pandora"],
-  ["jiosaavn.com", "JioSaavn"],
-  ["gaana.com", "Gaana"],
-  ["audiomack.com", "Audiomack"],
-  ["bandcamp.com", "Bandcamp"],
-];
-
-function sourceName(url) {
-  let host = "";
-  try { host = new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; }
-  const hit = SOURCES.find(([h]) => host === h || host.endsWith("." + h) || host.startsWith(h));
-  return hit ? hit[1] : host;
-}
-
-async function load() {
-  const o = await chrome.storage.session.get(KEY);
-  return o[KEY] || {};
-}
-
-/* the playing tab wins; otherwise the one that played most recently.
-   Tabs that have never played (a paused video left open) are ignored. */
-function pick(sessions) {
-  const list = Object.values(sessions).filter((s) => s && s.title && s.lastActive);
-  if (!list.length) return null;
-  list.sort((a, b) => (b.playing - a.playing) || (b.lastActive - a.lastActive));
-  return list[0];
-}
-
-function broadcast(now) {
-  chrome.runtime.sendMessage({ type: "media:now", data: now }).catch(() => {});
-}
-
-/* updates arrive from many tabs at once; run them one after another */
-let chain = Promise.resolve();
-function mutate(fn) {
-  chain = chain
-    .then(async () => {
-      const s = await load();
-      if (fn(s) === false) return;
-      await chrome.storage.session.set({ [KEY]: s });
-      broadcast(pick(s));
-    })
-    .catch(() => {});
-  return chain;
-}
-
-chrome.runtime.onMessage.addListener((msg, sender, reply) => {
-  if (!msg || typeof msg.type !== "string") return;
-
-  if (msg.type === "media:state" && sender.tab) {
-    const tab = sender.tab;
-    const frameId = sender.frameId || 0;
-    const key = tab.id + ":" + frameId;
-    const data = msg.data;
-    mutate((s) => {
-      if (!data) {
-        if (!s[key]) return false;
-        delete s[key];
-        return;
-      }
-      const prev = s[key];
-      s[key] = Object.assign({}, data, {
-        tabId: tab.id,
-        frameId,
-        windowId: tab.windowId,
-        source: sourceName(sender.url || tab.url || ""),
-        lastActive: data.playing ? Date.now() : (prev && prev.lastActive) || 0,
-      });
-    });
-    return;
-  }
-
-  if (msg.type === "media:get") {
-    load().then((s) => reply(pick(s)), () => reply(null));
-    return true;
-  }
-
-  if (msg.type === "media:cmd" && typeof msg.tabId === "number") {
-    const frameId = typeof msg.frameId === "number" ? msg.frameId : 0;
-    const key = msg.tabId + ":" + frameId;
-    chrome.tabs
-      .sendMessage(msg.tabId, { type: "media:cmd", action: msg.action, time: msg.time }, { frameId })
-      .catch(() => {
-        /* the frame no longer answers (closed or reloaded before the bridge) */
-        mutate((s) => { if (!s[key]) return false; delete s[key]; });
-      });
-    return;
-  }
-
-  if (msg.type === "media:focus" && typeof msg.tabId === "number") {
-    chrome.tabs.update(msg.tabId, { active: true }).catch(() => {});
-    if (typeof msg.windowId === "number") chrome.windows.update(msg.windowId, { focused: true }).catch(() => {});
-  }
-});
-
-chrome.tabs.onRemoved.addListener((tabId) => {
-  mutate((s) => {
-    const keys = Object.keys(s).filter((k) => k.split(":")[0] === String(tabId));
-    if (!keys.length) return false;
-    keys.forEach((k) => delete s[k]);
-  });
-});
-
-/* content scripts only reach pages loaded after the extension. When it is
-   installed or reloaded, add them to the tabs that are already open, so a
-   song that is already playing shows up without refreshing its tab. */
-chrome.runtime.onInstalled.addListener(async () => {
-  let tabs = [];
-  try { tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }); } catch { return; }
-  for (const tab of tabs) {
-    try {
-      await chrome.scripting.executeScript({ target: { tabId: tab.id, allFrames: true }, files: ["media-bridge.js"], world: "MAIN" });
-      await chrome.scripting.executeScript({ target: { tabId: tab.id, allFrames: true }, files: ["media-relay.js"] });
-    } catch {
-      /* discarded tabs, the Web Store, chrome:// pages: skip */
-    }
-  }
-});
 
 /* ================= REMINDERS ============================================
    Reminders (reminders.js) live in storage.local. Each enabled one has a
@@ -308,8 +177,8 @@ chrome.runtime.onInstalled.addListener(syncReminders);
 /* the worker wakes for many reasons; each time, catch up on anything due */
 syncReminders();
 
-/* ================= PAGE TRANSLATION ======================================
-   translate.js sends the text of a page in batches; this worker asks
+/* ================= NEW TAB TRANSLATION ===================================
+   translate.js (on the new tab only) sends its text in batches; this worker asks
    Google Translate (the endpoint the Translate website itself uses, so no
    key) and remembers answers while it is awake, so a page that re-renders
    the same labels doesn't ask twice.                                      */
@@ -359,198 +228,6 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   return true;
 });
 
-/* ================= SITE BLOCKER ==========================================
-   Customize > Blocker keeps the list (settings.blocker in "appearance").
-   While it applies — always, or inside its schedule — each site gets a
-   declarativeNetRequest rule that sends the page to blocked.html instead.
-   A break ("blocker:pause", a time) lifts every rule until it runs out; a
-   one-minute alarm re-checks the schedule and the break.                 */
-const BL_PAUSE = "blocker:pause";
-const BL_ALARM = "blocker:tick";
-const BL_FIRST_ID = 1000;
-const BL_MAX = 300;
-
-function readBlocker(raw) {
-  try {
-    const s = JSON.parse(raw || "null");
-    const b = s && s.settings && s.settings.blocker;
-    if (!b || !Array.isArray(b.sites)) return null;
-    return b;
-  } catch { return null; }
-}
-
-const minutesOf = (hhmm) => {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm || ""));
-  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
-};
-
-/* inside the schedule? "22:00"–"06:00" runs overnight, and belongs to the
-   day it starts on */
-function inSchedule(b, now) {
-  const from = minutesOf(b.from), to = minutesOf(b.to);
-  if (from == null || to == null || from === to) return false;
-  const days = Array.isArray(b.days) ? b.days : [];
-  const mins = now.getHours() * 60 + now.getMinutes();
-  const day = now.getDay();
-  if (from < to) return days.includes(day) && mins >= from && mins < to;
-  return (days.includes(day) && mins >= from) || (days.includes((day + 6) % 7) && mins < to);
-}
-
-function blockerApplies(b, now, pausedUntil) {
-  if (!b || !b.on || !b.sites.length) return false;
-  if (pausedUntil > now.getTime()) return false;
-  return b.schedule ? inSchedule(b, now) : true;
-}
-
-let blChain = Promise.resolve();
-let blSites = []; // what's blocked right now, for the tab watcher
-function syncBlocker() {
-  blChain = blChain.then(syncBlockerNow, syncBlockerNow).catch((e) => console.error("blocker:", e));
-  return blChain;
-}
-async function syncBlockerNow() {
-  if (!chrome.declarativeNetRequest) return;
-  const o = await chrome.storage.local.get(["appearance", BL_PAUSE, FOCUS_KEY]);
-  const b = readBlocker(o.appearance);
-  const pausedUntil = Number(o[BL_PAUSE]) || 0;
-  const now = new Date();
-  /* a running focus session blocks the list too — even with the blocker
-     off, and a "5-minute break" doesn't lift it */
-  const on = blockerApplies(b, now, pausedUntil) ||
-    !!(b && b.sites.length && focusBlocks(o[FOCUS_KEY], readFocus(o.appearance)));
-  const sites = on ? b.sites.filter((d) => typeof d === "string" && /^[a-z0-9.-]+$/.test(d)).slice(0, BL_MAX) : [];
-  blSites = sites;
-
-  const old = await chrome.declarativeNetRequest.getDynamicRules();
-  /* a failed rule update is logged, not fatal: the tab watcher below still blocks */
-  await chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: old.filter((r) => r.id >= BL_FIRST_ID && r.id < BL_FIRST_ID + BL_MAX).map((r) => r.id),
-    addRules: sites.map((d, i) => ({
-      id: BL_FIRST_ID + i,
-      priority: 1,
-      action: { type: "redirect", redirect: { extensionPath: "/blocked.html#" + d } },
-      condition: { requestDomains: [d], resourceTypes: ["main_frame"] },
-    })),
-  }).catch((e) => console.error("blocker rules:", e));
-
-  /* tabs already open on a blocked site close up too */
-  if (sites.length) {
-    const tabs = await chrome.tabs.query({ url: sites.flatMap((d) => ["*://" + d + "/*", "*://*." + d + "/*"]) }).catch(() => []);
-    tabs.forEach((t) => {
-      const host = (() => { try { return new URL(t.url).hostname; } catch { return ""; } })();
-      const d = sites.find((s) => host === s || host.endsWith("." + s)) || sites[0];
-      chrome.tabs.update(t.id, { url: chrome.runtime.getURL("blocked.html#" + d) }).catch(() => {});
-    });
-  }
-
-  /* re-check each minute while a schedule or a break can change things */
-  const needTick = !!(b && b.on && (b.schedule || pausedUntil > now.getTime()));
-  const has = await chrome.alarms.get(BL_ALARM);
-  if (needTick && !has) chrome.alarms.create(BL_ALARM, { periodInMinutes: 1 });
-  if (!needTick && has) chrome.alarms.clear(BL_ALARM);
-}
-
-chrome.alarms.onAlarm.addListener((a) => { if (a.name === BL_ALARM) syncBlocker(); });
-
-/* a second line behind the rules: a tab that still reaches a blocked site
-   (a rule that didn't apply, a page loaded from cache) is sent away too */
-const blockedSiteOf = (url) => {
-  let host = "";
-  try { const u = new URL(url); if (!/^https?:$/.test(u.protocol)) return ""; host = u.hostname.replace(/^www\./, ""); } catch { return ""; }
-  return blSites.find((s) => host === s || host.endsWith("." + s)) || "";
-};
-chrome.tabs.onUpdated.addListener((tabId, info) => {
-  if (!info.url) return;
-  blChain.then(() => {
-    const d = blockedSiteOf(info.url);
-    if (d) chrome.tabs.update(tabId, { url: chrome.runtime.getURL("blocked.html#" + d) }).catch(() => {});
-  });
-});
-
-let blTimer = 0;
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== "local" || !(changes.appearance || changes[BL_PAUSE] || changes[FOCUS_KEY])) return;
-  /* Customize saves on every tweak; only a change to the blocker counts */
-  if (changes.appearance && !changes[BL_PAUSE] && !changes[FOCUS_KEY]) {
-    const pick = (raw) => JSON.stringify([readBlocker(raw), readFocus(raw).block]);
-    if (pick(changes.appearance.oldValue) === pick(changes.appearance.newValue)) return;
-  }
-  clearTimeout(blTimer);
-  blTimer = setTimeout(syncBlocker, 250);
-});
-
-/* blocked.html: "Take a break" */
-chrome.runtime.onMessage.addListener((msg, sender, reply) => {
-  if (!msg || msg.type !== "blocker:break") return;
-  const minutes = Math.min(60, Math.max(1, Number(msg.minutes) || 5));
-  chrome.storage.local.set({ [BL_PAUSE]: Date.now() + minutes * 60000 })
-    .then(syncBlocker)
-    .then(() => reply({ ok: true }), () => reply({ ok: false }));
-  return true;
-});
-
-chrome.runtime.onStartup.addListener(syncBlocker);
-chrome.runtime.onInstalled.addListener(syncBlocker);
-syncBlocker();
-
-/* ================= AUTO OPTIMIZE =========================================
-   Quick tools > Optimize (settings.optimize in "appearance"). Every five
-   minutes, tabs unused for longer than `sleepAfter` are put to sleep
-   (discarded: they stay in the tab strip and reload when opened). With
-   `dedupe`, a tab that opens a page already open elsewhere closes, and
-   the tab that had it comes forward. Pinned, playing and active tabs are
-   never touched.                                                         */
-const OPT_ALARM = "optimize:tick";
-
-async function readOptimize() {
-  const o = await chrome.storage.local.get(["appearance"]);
-  try {
-    const s = JSON.parse(o.appearance || "null");
-    const opt = s && s.settings && s.settings.optimize;
-    return opt && opt.auto ? opt : null;
-  } catch { return null; }
-}
-
-async function syncOptimizeAlarm() {
-  const opt = await readOptimize();
-  const has = await chrome.alarms.get(OPT_ALARM);
-  if (opt && opt.sleep && !has) chrome.alarms.create(OPT_ALARM, { periodInMinutes: 5 });
-  if (!(opt && opt.sleep) && has) chrome.alarms.clear(OPT_ALARM);
-}
-
-async function sleepIdleTabs() {
-  const opt = await readOptimize();
-  if (!opt || !opt.sleep) return;
-  const limit = Date.now() - Math.max(5, Number(opt.sleepAfter) || 30) * 60000;
-  const tabs = await chrome.tabs.query({ discarded: false });
-  for (const t of tabs) {
-    if (t.active || t.pinned || t.audible || !/^https?:/.test(t.url || "")) continue;
-    if (!t.lastAccessed || t.lastAccessed > limit) continue;
-    await chrome.tabs.discard(t.id).catch(() => {});
-  }
-}
-
-const optPageKey = (u) => { try { const x = new URL(u); x.hash = ""; return x.href; } catch { return u; } };
-chrome.tabs.onUpdated.addListener(async (tabId, info, tab) => {
-  if (!info.url || !/^https?:/.test(info.url)) return;
-  const opt = await readOptimize();
-  if (!opt || !opt.dedupe || tab.pinned) return;
-  const key = optPageKey(info.url);
-  const others = (await chrome.tabs.query({})).filter((t) => t.id !== tabId && t.url && optPageKey(t.url) === key);
-  if (!others.length) return;
-  const keep = others.sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0))[0];
-  await chrome.tabs.update(keep.id, { active: true }).catch(() => {});
-  await chrome.windows.update(keep.windowId, { focused: true }).catch(() => {});
-  await chrome.tabs.remove(tabId).catch(() => {});
-});
-
-chrome.alarms.onAlarm.addListener((a) => { if (a.name === OPT_ALARM) sleepIdleTabs(); });
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && changes.appearance) syncOptimizeAlarm();
-});
-chrome.runtime.onStartup.addListener(syncOptimizeAlarm);
-syncOptimizeAlarm();
-
 /* ================= FOCUS TIMER ===========================================
    Quick tools > Focus (focus.js draws it; settings.focus in "appearance").
    The worker owns the clock so a session ends — sound, notification, the
@@ -559,13 +236,12 @@ syncOptimizeAlarm();
        paused), paused, round (focus sessions done this cycle), startedAt,
        next (the phase the Start button begins) }
    Finished and stopped focus sessions go into "focus:history" (newest
-   last): { id, start, end, min, done }. While a focus session runs,
-   the site blocker's list is blocked (syncBlockerNow).                   */
+   last): { id, start, end, min, done }.                                  */
 const FOCUS_KEY = "focus:state";
 const FOCUS_HIST = "focus:history";
 const FOCUS_ALARM = "focus:end";
 const FOCUS_HIST_MAX = 1000;
-const FOCUS_DEFAULTS = { work: 25, short: 5, long: 15, every: 4, block: true, dim: true, sound: "chime", autoBreak: true, autoNext: false, notify: true };
+const FOCUS_DEFAULTS = { work: 25, short: 5, long: 15, every: 4, dim: true, sound: "chime", autoBreak: true, autoNext: false, notify: true };
 const FOCUS_IDLE = { phase: "idle", endsAt: 0, left: 0, paused: false, round: 0, startedAt: 0, next: "focus" };
 
 function readFocus(raw) {
@@ -573,9 +249,6 @@ function readFocus(raw) {
     const s = JSON.parse(raw || "null");
     return Object.assign({}, FOCUS_DEFAULTS, s && s.settings && s.settings.focus);
   } catch { return Object.assign({}, FOCUS_DEFAULTS); }
-}
-function focusBlocks(state, prefs) {
-  return !!(state && state.phase === "focus" && !state.paused && prefs.block);
 }
 const phaseMinutes = (phase, prefs) => Math.max(1, Math.min(180, Number(prefs[phase === "focus" ? "work" : phase]) || FOCUS_DEFAULTS[phase === "focus" ? "work" : phase]));
 
@@ -683,89 +356,6 @@ chrome.alarms.onAlarm.addListener((a) => { if (a.name === FOCUS_ALARM) focusFini
 /* a phase that ran out while Chrome was closed ends on the next start */
 chrome.runtime.onStartup.addListener(focusFinish);
 focusFinish();
-
-/* ================= STATS =================================================
-   For the stats dashboard (stats.js). Counts the seconds the active tab's
-   site is in front of you — Chrome focused, and you at the computer (or
-   the tab playing sound) — and the times a blocked site was opened.
-   "stats:days" = { "YYYY-MM-DD": { t: { host: seconds }, b: { host: n } } },
-   the last STATS_KEEP days, on this computer only. The site in front is
-   remembered in storage.session ("stats:cur") while the worker sleeps.  */
-const STATS_KEY = "stats:days";
-const STATS_CUR = "stats:cur";
-const STATS_ALARM = "stats:tick";
-const STATS_KEEP = 62;
-const STATS_MAX_CHUNK = 120; // s; one step never counts more (sleep, a stalled worker)
-const STATS_MAX_HOSTS = 400; // per day
-
-const dayOf = (t) => { const d = new Date(t); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
-const hostOf = (url) => {
-  if (!/^https?:/.test(url || "")) return "";
-  try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; }
-};
-
-async function statsUpdate(fn) {
-  const o = await chrome.storage.local.get([STATS_KEY]);
-  const days = o[STATS_KEY] && typeof o[STATS_KEY] === "object" ? o[STATS_KEY] : {};
-  fn(days);
-  const keys = Object.keys(days).sort();
-  keys.slice(0, Math.max(0, keys.length - STATS_KEEP)).forEach((k) => delete days[k]);
-  await chrome.storage.local.set({ [STATS_KEY]: days });
-}
-
-/* the site in front right now, or "" */
-async function frontHost() {
-  const win = await chrome.windows.getLastFocused().catch(() => null);
-  if (!win || !win.focused) return "";
-  const [tab] = await chrome.tabs.query({ active: true, windowId: win.id }).catch(() => []);
-  if (!tab) return "";
-  const idle = chrome.idle ? await chrome.idle.queryState(120).catch(() => "active") : "active";
-  if (idle !== "active" && !tab.audible) return "";
-  return hostOf(tab.url);
-}
-
-/* close the running chunk and start the next; one at a time */
-let statsChain = Promise.resolve();
-function statsStep() {
-  statsChain = statsChain.then(async () => {
-    const now = Date.now();
-    const cur = (await chrome.storage.session.get([STATS_CUR]))[STATS_CUR];
-    if (cur && cur.host && cur.since) {
-      const secs = Math.min(STATS_MAX_CHUNK, Math.round((now - cur.since) / 1000));
-      if (secs > 0) {
-        await statsUpdate((days) => {
-          const d = (days[dayOf(now)] = days[dayOf(now)] || { t: {}, b: {} });
-          if (d.t[cur.host] != null || Object.keys(d.t).length < STATS_MAX_HOSTS) d.t[cur.host] = (d.t[cur.host] || 0) + secs;
-        });
-      }
-    }
-    const host = await frontHost();
-    await chrome.storage.session.set({ [STATS_CUR]: host ? { host, since: now } : null });
-  }).catch((e) => console.error("Atlas stats:", e));
-  return statsChain;
-}
-
-chrome.tabs.onActivated.addListener(statsStep);
-chrome.tabs.onUpdated.addListener((id, info, tab) => { if (info.url && tab.active) statsStep(); });
-chrome.windows.onFocusChanged.addListener(statsStep);
-if (chrome.idle) {
-  chrome.idle.setDetectionInterval(120);
-  chrome.idle.onStateChanged.addListener(statsStep);
-}
-chrome.alarms.onAlarm.addListener((a) => { if (a.name === STATS_ALARM) statsStep(); });
-chrome.alarms.get(STATS_ALARM).then((a) => { if (!a) chrome.alarms.create(STATS_ALARM, { periodInMinutes: 1 }); });
-
-/* blocked.html: a blocked site was opened */
-chrome.runtime.onMessage.addListener((msg) => {
-  if (!msg || msg.type !== "stats:blocked" || typeof msg.site !== "string") return;
-  const site = msg.site.toLowerCase().replace(/[^a-z0-9.-]/g, "").slice(0, 100);
-  if (!site) return;
-  statsChain = statsChain.then(() => statsUpdate((days) => {
-    const d = (days[dayOf(Date.now())] = days[dayOf(Date.now())] || { t: {}, b: {} });
-    d.b = d.b || {};
-    d.b[site] = (d.b[site] || 0) + 1;
-  })).catch(() => {});
-});
 
 /* ================= SYNC STAMPS ===========================================
    Automatic sync (sync.js, Atlas Pro) needs to know when each synced value
