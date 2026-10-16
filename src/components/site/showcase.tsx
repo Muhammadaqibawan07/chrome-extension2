@@ -374,7 +374,6 @@ export function CommandMock() {
 }
 
 const ENGINES = [
-  ["google", "Google", "!g", "best ramen near me"],
   ["youtube", "YouTube", "!yt", "lofi hip hop radio"],
   ["github", "GitHub", "!gh", "react compiler"],
   ["wikipedia", "Wikipedia", "!w", "Tokyo"],
@@ -402,7 +401,7 @@ export function SearchMock() {
             {l}
           </span>
         ))}
-        <span>+ ChatGPT, Amazon, Bing, DuckDuckGo, Brave, your own</span>
+        <span>+ ChatGPT, Amazon · plain searches use your browser's engine</span>
       </div>
       <p className="srch-hint">Searching {label}</p>
     </div>

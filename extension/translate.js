@@ -1,25 +1,20 @@
-/* ATLAS NEW TAB — page translator
-   Puts every website (and the new tab itself) into the language picked in
-   Customize > Language. Runs in the top frame of each page at
-   document_idle, and in index.html. It swaps the text of the page in
-   place, keeps the original next to each piece so "Show original" can put
-   it back, and follows content that arrives later (feeds, SPAs).
+/* ATLAS NEW TAB — new tab translator
+   Puts the new tab page itself into the language picked in Customize >
+   Language. Loaded by index.html only; Atlas never translates other
+   websites. It swaps the text of the page in place, keeps the original
+   next to each piece so it can be put back, and follows content that
+   arrives later (panels, the assistant).
 
    Settings come from the same "appearance" record as the rest of
-   Customize (see cursor-apply.js); sites switched off with "Never on this
-   site" are kept apart under "translate:never", so a web page never
-   writes to the settings record. The words themselves are translated by
-   background.js ("translate:batch").                                      */
+   Customize. The words themselves are translated by background.js
+   ("translate:batch").                                                    */
 
 (() => {
   "use strict";
   if (window.__atlasTranslate || typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.id) return;
   window.__atlasTranslate = true;
 
-  const IS_NEWTAB = location.protocol === "chrome-extension:";
-  if (!IS_NEWTAB && window.top !== window) return;
-  const HOST = location.hostname;
-  const NEVER_KEY = "translate:never";
+  if (location.protocol !== "chrome-extension:") return;
 
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "CODE", "PRE", "KBD", "SAMP", "VAR", "SVG", "MATH", "CANVAS", "IFRAME", "TEMPLATE", "HEAD"]);
   const SKIP_SEL = '[translate="no"], .notranslate, [contenteditable=""], [contenteditable="true"], #atlas-tr-host';
@@ -31,9 +26,6 @@
 
   let target = "";       // language the page is in now ("" = original)
   let wanted = "";       // language the settings ask for
-  let badgeOn = true;
-  let paused = false;    // "Show original" on this page, until reload
-  let failed = false;
 
   const textInfo = new WeakMap(); // Text -> { orig, out }
   const attrInfo = new WeakMap(); // Element -> { attr: { orig, out } }
@@ -168,7 +160,7 @@
         const b = batches[i++];
         const out = await send(b, to);
         if (target !== to) return;
-        if (!out) { failed = true; paintBadge(); return; }
+        if (!out) return;
         /* our own writes aren't news; the page's, still waiting, are */
         handle(observer.takeRecords());
         observer.disconnect();
@@ -222,18 +214,11 @@
     }
   }
 
-  /* a page already written in the language is left alone */
-  function pageIs(lang) {
-    const own = (document.documentElement.lang || "").toLowerCase();
-    return !!own && own.split("-")[0] === lang.toLowerCase().split("-")[0];
-  }
-
   function apply() {
-    const to = paused || (!IS_NEWTAB && pageIs(wanted)) ? "" : wanted;
-    if (to === target) { paintBadge(); return; }
+    const to = wanted;
+    if (to === target) return;
     if (target) restore();
     target = to;
-    failed = false;
     if (target) {
       collect(document.body);
       const t = document.querySelector("title");
@@ -241,90 +226,26 @@
       observe();
       schedule(0);
     }
-    paintBadge();
   }
 
-  function readSettings(raw, never) {
+  function readSettings(raw) {
     let s = null;
     try { s = JSON.parse(raw || "null"); } catch {}
     const lang = (s && s.settings && s.settings.language) || {};
-    const on = IS_NEWTAB ? lang.newtab !== false : lang.pages !== false && !(never || []).includes(HOST);
-    wanted = on && typeof lang.lang === "string" ? lang.lang : "";
-    badgeOn = lang.badge !== false;
-  }
-
-  /* ---------- the little badge on web pages ---------- */
-  let host = null, shadow = null, closed = false;
-  function paintBadge() {
-    if (IS_NEWTAB) return;
-    const show = badgeOn && !closed && wanted && (target || paused || failed);
-    if (!show) { if (host) host.hidden = true; return; }
-    if (!host) {
-      host = document.createElement("div");
-      host.id = "atlas-tr-host";
-      host.setAttribute("translate", "no");
-      shadow = host.attachShadow({ mode: "closed" });
-      document.documentElement.append(host);
-    }
-    host.hidden = false;
-    const L = window.AtlasLangs && AtlasLangs.find(wanted);
-    const name = L ? L.name : wanted;
-    shadow.innerHTML = `<style>
-      :host{all:initial;position:fixed;right:16px;bottom:16px;z-index:2147483646}
-      .b{display:flex;align-items:center;gap:4px;padding:5px 6px 5px 11px;border-radius:999px;
-        background:rgba(18,18,22,.86);color:#f7f6f3;font:12px/1.2 system-ui,sans-serif;
-        border:1px solid rgba(255,255,255,.14);box-shadow:0 8px 24px -8px rgba(0,0,0,.6);
-        backdrop-filter:blur(14px);opacity:.8;transition:opacity .2s}
-      .b:hover{opacity:1}
-      span{white-space:nowrap;margin-right:4px}
-      button{all:unset;cursor:pointer;padding:4px 9px;border-radius:999px;color:#d8c3a5;white-space:nowrap}
-      button:hover{background:rgba(255,255,255,.1)}
-      .x{color:#aaa;padding:4px 7px}
-    </style><div class="b" role="status"></div>`;
-    const b = shadow.querySelector(".b");
-    const btn = (text, fn, cls) => {
-      const e = document.createElement("button");
-      e.textContent = text;
-      if (cls) e.className = cls;
-      e.addEventListener("click", fn);
-      b.append(e);
-    };
-    const label = document.createElement("span");
-    b.append(label);
-    if (failed) {
-      label.textContent = "Couldn't translate this page";
-      btn("Retry", () => { failed = false; target = ""; apply(); });
-    } else if (paused) {
-      label.textContent = "文A Original";
-      btn("Translate to " + name, () => { paused = false; apply(); });
-    } else {
-      label.textContent = "文A " + name;
-      btn("Show original", () => { paused = true; apply(); });
-      btn("Never here", () => {
-        chrome.storage.local.get([NEVER_KEY], (o) => {
-          const list = Array.isArray(o[NEVER_KEY]) ? o[NEVER_KEY] : [];
-          if (!list.includes(HOST)) list.push(HOST);
-          chrome.storage.local.set({ [NEVER_KEY]: list });
-        });
-      });
-    }
-    btn("✕", () => { closed = true; paintBadge(); }, "x");
-    b.lastChild.setAttribute("aria-label", "Hide");
+    wanted = typeof lang.lang === "string" ? lang.lang : "";
   }
 
   /* ---------- boot + live settings ---------- */
-  let rawSettings = null, never = [];
-  const refresh = () => { readSettings(rawSettings, never); apply(); };
-  chrome.storage.local.get(["appearance", NEVER_KEY], (o) => {
+  let rawSettings = null;
+  const refresh = () => { readSettings(rawSettings); apply(); };
+  chrome.storage.local.get(["appearance"], (o) => {
     rawSettings = o.appearance;
-    never = Array.isArray(o[NEVER_KEY]) ? o[NEVER_KEY] : [];
     if (document.body) refresh();
     else document.addEventListener("DOMContentLoaded", refresh, { once: true });
   });
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "local" || !(changes.appearance || changes[NEVER_KEY])) return;
-    if (changes.appearance) rawSettings = changes.appearance.newValue;
-    if (changes[NEVER_KEY]) never = Array.isArray(changes[NEVER_KEY].newValue) ? changes[NEVER_KEY].newValue : [];
+    if (area !== "local" || !changes.appearance) return;
+    rawSettings = changes.appearance.newValue;
     if (document.body) refresh();
   });
 })();

@@ -771,8 +771,8 @@
   /* ================= PRIVATE SPACE =======================================
      vault.js decrypts the private workspace on unlock; it is then just one
      more entry in WORKSPACES (flagged `private`), so the rail, launcher,
-     editing and drag and drop all work on it unchanged. It adds a Notes tab
-     and "Save open tabs", and never feeds Quick Peek. Locking takes it out
+     editing and drag and drop all work on it unchanged. It adds a Notes tab,
+     and never feeds Quick Peek. Locking takes it out
      of WORKSPACES again. */
   const V = window.AtlasVault;
   const VAULT_ID = "atlas-private";
@@ -1444,16 +1444,6 @@
 
     const notes = tab === "notes";
     if (tab !== "all" && !notes) toolsEl.appendChild(menuButton("card", tab, "Section options"));
-    if (ws.private && !notes && canReadTabs) {
-      const save = document.createElement("button");
-      save.type = "button";
-      save.className = "ltool ltool-icon";
-      save.dataset.act = "save-tabs";
-      save.setAttribute("aria-label", "Save this window's open tabs");
-      save.title = tab === "all" ? "Save open tabs as a new section" : "Save open tabs to this section";
-      save.innerHTML = svgIcon("tabs");
-      toolsEl.appendChild(save);
-    }
     const addSection = document.createElement("button");
     addSection.type = "button";
     addSection.className = "ltool";
@@ -1605,43 +1595,6 @@
     if ((n.title || n.text) && !confirm('Delete "' + (n.title || "Untitled") + '"?')) return;
     ws.notes.splice(i, 1);
     commit();
-  }
-
-  /* --- "Save open tabs": every web page open in this window becomes a
-     shortcut. Without the "tabs" permission Chrome still reports the URL
-     and title of pages the extension has host access to (all http/https). */
-  const canReadTabs = typeof chrome !== "undefined" && !!(chrome.tabs && chrome.tabs.query);
-
-  async function saveOpenTabs() {
-    const ws = vaultWs();
-    if (!ws || !canReadTabs || currentWs() !== ws || privateLocked(ws)) return;
-    let list = [];
-    try { list = await chrome.tabs.query({ currentWindow: true }); } catch { list = []; }
-    const tab = activeTab(ws);
-    let card = tab !== "all" && tab !== "notes" ? findCard(tab) : null;
-    const have = new Set(card ? card.items.map((it) => it.url) : []);
-    const items = [];
-    list.forEach((t) => {
-      const url = t.url || "";
-      if (!/^https?:\/\//i.test(url) || have.has(url)) return;
-      have.add(url);
-      items.push({
-        id: uid("item"),
-        name: (t.title || hostOf(url) || url).trim().slice(0, 60),
-        url,
-        icon: /^https:\/\//i.test(t.favIconUrl || "") ? t.favIconUrl : "",
-      });
-    });
-    if (!items.length) return toast("No new web pages open in this window");
-    if (!card) {
-      const day = new Date().toLocaleDateString([], { day: "numeric", month: "short" });
-      card = { id: uid("card"), title: "Tabs · " + day, hint: "Saved tabs", items: [] };
-      ws.cards.push(card);
-      tabs[ws.id] = card.id;
-    }
-    card.items.push(...items);
-    commit();
-    toast("Saved " + items.length + " tab" + (items.length === 1 ? "" : "s") + ' to "' + card.title + '"');
   }
 
   /* the ⋮ trigger; the menu itself is built on demand in openMenu() */
@@ -2162,7 +2115,6 @@
     else if (act === "add-card") { e.preventDefault(); addCard(); }
     else if (act === "add-note") { e.preventDefault(); addNote(); }
     else if (act === "del-note") { e.preventDefault(); deleteNote(trigger.dataset.id); }
-    else if (act === "save-tabs") { e.preventDefault(); saveOpenTabs(); }
   });
 
   /* close the menu on an outside click, and on scroll/resize where the
@@ -2238,10 +2190,11 @@
   });
 
   /* ================= SEARCH ==============================================
-     The bar searches the default engine (Customize > Widgets > Search bar),
-     switched from the engine button on its left. "!yt cats" sends a single
-     search to another engine by its keyword. An engine URL may mark the
-     query with %s; otherwise the query is appended.
+     The bar searches with the browser's default search engine, through
+     chrome.search, so it follows the user's own search settings. "!yt cats"
+     sends a single search to a site by its keyword; the engine button on
+     the left fills that keyword in. A site URL may mark the query with %s;
+     otherwise the query is appended.
      History is kept apart: it is only shown in its own panel (the clock
      button), never as suggestions under the field. */
   const qEl = $("q");
@@ -2262,7 +2215,7 @@
   }
 
   /* "!yt cats" -> { engine: YouTube, term: "cats" }; anything else goes to
-     the default engine unchanged */
+     the browser's search engine unchanged */
   function parseQuery(raw) {
     const q = raw.trim();
     const m = q.match(/^!(\S+)(?:\s+([\s\S]*))?$/);
@@ -2299,7 +2252,7 @@
   }
 
   function syncSearchLabel() {
-    const label = "Search " + AS.engine().label;
+    const label = "Search the web";
     qEl.placeholder = label + "...";
     qEl.setAttribute("aria-label", label);
     const p = parseQuery(qEl.value);
@@ -2319,7 +2272,9 @@
     if (!t) return;
     const e = eng || AS.engine();
     remember(t, e.id);
-    window.location.href = searchUrl(t, e);
+    if (!e.web) { window.location.href = searchUrl(t, e); return; }
+    /* the browser's own engine, as the user set it in Chrome */
+    if (chrome.search && chrome.search.query) chrome.search.query({ text: t, disposition: "CURRENT_TAB" });
   }
 
   $("search").addEventListener("submit", (e) => {
@@ -2410,7 +2365,9 @@
       const list = typeof raw === "string" ? JSON.parse(raw) : raw;
       searches = (Array.isArray(list) ? list : [])
         .filter((h) => h && typeof h.q === "string" && h.q.trim())
-        .map((h) => ({ q: h.q, engine: typeof h.engine === "string" ? h.engine : "google", at: Number(h.at) || 0 }))
+        /* searches from engines that are gone (Google, Bing, custom...)
+           count as web searches */
+        .map((h) => ({ q: h.q, engine: AS.findEngine(h.engine) ? h.engine : "web", at: Number(h.at) || 0 }))
         .slice(0, HISTORY_MAX);
     } catch { searches = []; }
   }
@@ -2464,10 +2421,12 @@
     if (!silent && hadFocus) qEl.focus();
   }
 
-  /* engine menu: every engine, the default marked, its !keyword beside it */
+  /* engine menu: the browser's engine, then the sites with their !keyword.
+     Picking a site fills its keyword into the bar for this one search;
+     the default never changes. */
   function renderEngineMenu() {
     engineMenu.textContent = "";
-    const current = AS.engine().id;
+    const current = parseQuery(qEl.value).engine.id;
     const all = AS.engines();
     const add = (list, title) => {
       if (!list.length) return;
@@ -2492,22 +2451,20 @@
           k.textContent = "!" + eng.key;
           b.appendChild(k);
         }
+        if (eng.hint) b.title = eng.hint;
         b.addEventListener("click", () => {
-          AS.set("widgets.search.engine", eng.id); // the settings listener re-syncs the bar
+          const term = parseQuery(qEl.value).term;
+          qEl.value = (eng.key ? "!" + eng.key + " " : "") + term;
+          qEl.dispatchEvent(new Event("input"));
           closeSearchPop(true);
           qEl.focus();
+          qEl.setSelectionRange(qEl.value.length, qEl.value.length);
         });
         engineMenu.appendChild(b);
       });
     };
-    add(all.filter((e) => !e.custom), "Search with");
-    add(all.filter((e) => e.custom), "Your engines");
-    const more = document.createElement("button");
-    more.type = "button";
-    more.className = "sx-more";
-    more.textContent = "+ Add a custom engine";
-    more.addEventListener("click", () => { closeSearchPop(true); AS.open("widgets"); });
-    engineMenu.appendChild(more);
+    add(all.filter((e) => e.web), "Search the web");
+    add(all.filter((e) => !e.web), "Search a site");
   }
 
   engineBtn.addEventListener("click", (e) => {
@@ -2574,7 +2531,7 @@
     const go = document.createElement("button");
     go.type = "button";
     go.className = "sx-row-go";
-    go.title = "Search " + eng.label + " again";
+    go.title = (eng.web ? "Search the web" : "Search " + eng.label) + " again";
     go.appendChild(engineBadge(eng, "sx-badge"));
     const text = document.createElement("span");
     text.className = "sx-row-q";
@@ -3162,22 +3119,20 @@
   }
 
   function createSystemCommands() {
-    const engine = AS.engine().label;
     return [
       {
         id: "sys:search",
-        title: "Search " + engine,
-        description: "Search the web for your query",
+        title: "Search the web",
+        description: "Search with your browser's search engine",
         category: "Search",
-        keywords: ["search", "google", "web", "find", "query", engine.toLowerCase()],
+        keywords: ["search", "web", "find", "query"],
         mark: "⌕",
         /* always reachable, even when nothing else matches */
         fallback: true,
         /* the title picks up whatever follows "search" as you type */
         dynamic: (query) => {
-          const e = engine.toLowerCase();
-          const term = stripLead(query, ["search " + e + " for", "search " + e, "search google for", "search google", "search", e, "google"]);
-          return term ? { title: "Search " + engine + " for “" + term + "”", term } : null;
+          const term = stripLead(query, ["search the web for", "search the web", "search web for", "search web", "search for", "search", "web"]);
+          return term ? { title: "Search the web for “" + term + "”", term } : null;
         },
         run: (cmd) => {
           const term = (cmd && cmd.term) || "";
@@ -3206,7 +3161,7 @@
       {
         id: "sys:tools",
         title: "Quick Tools",
-        description: "Notes, optimize, blocker, zen clock, minimal, quote",
+        description: "Notes, focus, habits, minimal, quote",
         category: "Atlas",
         keywords: ["quick", "tools", "toolbox", "utilities"],
         mark: "⊞",
@@ -3256,33 +3211,6 @@
         keywords: ["calendar", "google calendar", "events", "meetings", "agenda", "week", "today"],
         mark: "▦",
         run: () => window.AtlasQuickTools && AtlasQuickTools.open("calendar"),
-      },
-      {
-        id: "sys:optimize",
-        title: "Optimize Tabs",
-        description: "Close duplicates, sleep tabs, auto optimize",
-        category: "Tabs",
-        keywords: ["optimize", "tabs", "memory", "sleep", "duplicate", "close", "clean", "speed", "performance"],
-        mark: "⚡",
-        run: () => window.AtlasQuickTools && AtlasQuickTools.openOptimize(),
-      },
-      {
-        id: "sys:dedupe",
-        title: "Close Duplicate Tabs",
-        description: "Keep one tab per page",
-        category: "Tabs",
-        keywords: ["duplicate", "duplicates", "close", "tabs", "same"],
-        mark: "⧉",
-        run: () => window.AtlasQuickTools && AtlasQuickTools.closeDuplicates(),
-      },
-      {
-        id: "sys:sleep",
-        title: "Sleep Inactive Tabs",
-        description: "Free memory; they reload when you open them",
-        category: "Tabs",
-        keywords: ["sleep", "discard", "suspend", "memory", "tabs", "ram"],
-        mark: "☾",
-        run: () => window.AtlasQuickTools && AtlasQuickTools.sleepTabs(),
       },
       {
         id: "sys:minimal",
@@ -3347,15 +3275,6 @@
         run: () => window.AtlasQuickTools && AtlasQuickTools.openHabits(),
       },
       {
-        id: "sys:blocker",
-        title: "Block Sites",
-        description: "Keep distracting sites closed, always or at set times",
-        category: "Atlas",
-        keywords: ["block", "blocker", "focus", "distraction", "site", "website", "social"],
-        mark: "⊘",
-        run: () => window.AtlasQuickTools && AtlasQuickTools.open("blocker"),
-      },
-      {
         id: "sys:account",
         title: "Account",
         description: "Google sign-in, sync, plan and sign out",
@@ -3385,7 +3304,7 @@
       {
         id: "sys:language",
         title: "Language & Translation",
-        description: "Translate websites, voice typing, the assistant's voice",
+        description: "Translate this page, voice typing, the assistant's voice",
         category: "Atlas",
         keywords: ["language", "translate", "translation", "urdu", "hindi", "arabic", "voice", "speech"],
         mark: "文",
@@ -3775,133 +3694,6 @@
       closeCommandCenter();
     }
   });
-
-  /* ================= NOW PLAYING =========================================
-     Whatever is playing in another tab (see media-bridge.js and
-     background.js). Hidden when nothing has played, or when the page is
-     opened outside the extension. */
-  (function nowPlaying() {
-    const box = $("media");
-    const hasRuntime =
-      typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id && chrome.runtime.onMessage;
-    if (!box || !hasRuntime) return;
-
-    box.insertAdjacentHTML("afterbegin", TRACE_SVG);
-    const img = $("mediaImg");
-    const title = $("mediaTitle");
-    const artist = $("mediaArtist");
-    const fill = $("mediaFill");
-    const bar = $("mediaBar");
-    const cur = $("mediaCur");
-    const dur = $("mediaDur");
-    const toggle = $("mediaToggle");
-    const prev = $("mediaPrev");
-    const next = $("mediaNext");
-    let now = null;
-    let ticker = 0;
-
-    const send = (msg) => {
-      try { chrome.runtime.sendMessage(msg).catch(() => {}); } catch {}
-    };
-    const cmd = (action, time) => now && send({ type: "media:cmd", tabId: now.tabId, frameId: now.frameId, action, time });
-
-    const fmt = (s) => {
-      s = Math.max(0, Math.floor(s || 0));
-      const h = Math.floor(s / 3600);
-      const m = Math.floor((s % 3600) / 60);
-      const ss = String(s % 60).padStart(2, "0");
-      return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
-    };
-
-    /* position is extrapolated between the worker's updates */
-    function position() {
-      if (!now) return 0;
-      let p = now.position || 0;
-      if (now.playing) p += ((Date.now() - now.at) / 1000) * (now.rate || 1);
-      return now.duration ? Math.min(p, now.duration) : p;
-    }
-
-    function paintProgress() {
-      if (!now) return;
-      const d = now.duration || 0;
-      const p = position();
-      fill.style.width = d ? (p / d) * 100 + "%" : "0%";
-      cur.textContent = d ? fmt(p) : "";
-      dur.textContent = d ? fmt(d) : "LIVE";
-    }
-
-    function render(data) {
-      now = data && data.title ? data : null;
-      clearInterval(ticker);
-      if (!now) {
-        box.hidden = true;
-        document.body.classList.remove("has-media");
-        return;
-      }
-      box.hidden = false;
-      document.body.classList.add("has-media");
-
-      title.textContent = now.title;
-      title.title = now.title;
-      artist.textContent = [now.artist, now.source].filter(Boolean).join(" · ");
-      $("mediaOpen").setAttribute("aria-label", `Open ${now.source || "the tab"}: ${now.title}`);
-
-      if (now.art && img.getAttribute("src") !== now.art) img.src = now.art;
-      img.hidden = !now.art;
-
-      box.classList.toggle("is-paused", !now.playing);
-      toggle.setAttribute("aria-label", now.playing ? "Pause" : "Play");
-      prev.disabled = !(now.can && now.can.prev);
-      next.disabled = !(now.can && now.can.next);
-      bar.classList.toggle("is-seekable", !!(now.can && now.can.seek && now.duration));
-
-      paintProgress();
-      if (now.playing) ticker = setInterval(paintProgress, 500);
-    }
-
-    img.addEventListener("error", () => { img.hidden = true; });
-
-    toggle.addEventListener("click", () => {
-      if (!now) return;
-      cmd("toggle");
-      /* answer the click right away; the tab confirms a moment later */
-      now = Object.assign({}, now, { playing: !now.playing, position: position(), at: Date.now() });
-      render(now);
-    });
-    prev.addEventListener("click", () => cmd("prev"));
-    next.addEventListener("click", () => cmd("next"));
-    $("mediaOpen").addEventListener("click", () => {
-      if (now) send({ type: "media:focus", tabId: now.tabId, windowId: now.windowId });
-    });
-    bar.addEventListener("click", (e) => {
-      if (!now || !bar.classList.contains("is-seekable")) return;
-      const r = bar.getBoundingClientRect();
-      const t = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * now.duration;
-      cmd("seek", t);
-      now = Object.assign({}, now, { position: t, at: Date.now() });
-      paintProgress();
-    });
-
-    chrome.runtime.onMessage.addListener((msg) => {
-      if (msg && msg.type === "media:now") render(msg.data);
-    });
-    const refresh = () => {
-      try {
-        chrome.runtime.sendMessage({ type: "media:get" }).then(render, () => {});
-      } catch {}
-    };
-    refresh();
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
-
-    /* the left dock makes room for the widget, whatever height it ends up */
-    if (typeof ResizeObserver !== "undefined") {
-      new ResizeObserver(() => {
-        if (box.offsetHeight) {
-          document.documentElement.style.setProperty("--media-h", box.offsetHeight + "px");
-        }
-      }).observe(box);
-    }
-  })();
 
   /* ================= WEATHER =============================================
      Current conditions from Open-Meteo (free, no key). Location, in order

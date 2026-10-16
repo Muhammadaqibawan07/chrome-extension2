@@ -1,6 +1,7 @@
 # Atlas New Tab — Chrome Extension (Manifest V3)
 
 A calm, editorial New Tab page with cinematic live video wallpapers.
+Version 1.0.2.
 
 ## Install (Load unpacked)
 1. Unzip the download.
@@ -36,12 +37,15 @@ or by right-clicking the bare wallpaper. Every change applies live and is saved.
   3D tilt, animations, and the panel's own transition (Glide, Unfold,
   Curtain, Zoom or Fade, with a duration and a Preview button)
 - **Widgets** — show / hide, position (9 anchors + nudge), and size for the clock,
-  search bar, now playing, wallpaper button, Quick Peek and assistant; dock side,
-  width and icon size; 24-hour clock, date, °C / °F, search engine
-- **Search bar** — pick the engine from the icon on the bar's left (Google,
-  YouTube, GitHub, Wikipedia, ChatGPT, Amazon, Bing, DuckDuckGo, Brave, or
-  your own custom engines, added under Widgets → Search bar). Send a single
-  search elsewhere with a keyword: `!yt cats`, `!gh react`, `!w Tokyo`.
+  search bar, Zen clock & minimal buttons, Quick Peek, daily quote and
+  assistant; dock side, width and icon size; 24-hour clock, date, °C / °F
+- **Cursor** — cursor packs or your own uploads, colours and size. The
+  cursor applies on this new tab page only
+- **Search bar** — always searches with the browser's default search engine
+  (`chrome.search.query`), so it follows the user's own Chrome settings.
+  Site searches use a keyword: `!yt` YouTube, `!gh` GitHub, `!w` Wikipedia,
+  `!gpt` ChatGPT, `!a` Amazon (`!yt cats`). Picking a site from the icon on
+  the bar's left fills its keyword in for one search.
   Past searches are in their own panel (the clock button) — filter, re-run,
   edit, delete or clear them; "Remember searches" turns history off
 - **Notes** — everyday notes (the same list as Quick tools → Notes): add,
@@ -49,13 +53,17 @@ or by right-clicking the bare wallpaper. Every change applies live and is saved.
 - **Privacy** — a password-locked private folder, like a phone's hidden
   folder: the lock on the dock opens a password screen, then the private
   shortcuts as an app grid (by section) and private notes. It's also a
-  workspace of its own on the dock (sections, shortcuts, a Notes tab and
-  "Save open tabs") while unlocked; right-click the lock to lock it. Its content is encrypted (PBKDF2 + AES-GCM, `vault.js`);
+  workspace of its own on the dock (sections, shortcuts and a Notes tab)
+  while unlocked; right-click the lock to lock it. Its content is encrypted (PBKDF2 + AES-GCM, `vault.js`);
   the password can't be recovered. Options: lock button on the dock, stay
   unlocked until Chrome closes, lock when idle, change password, delete
 - **Backup** — export / import settings as JSON, or reset everything
 
 The code is in `customize.js`; uploaded background files are kept in IndexedDB.
+The bottom of the panel has the footer (`quicktools.js`): Feedback, Rate us,
+Share, and links to FAQs, Changelog, Website, Privacy, Terms (`/terms`),
+Refunds (`/refunds`) and Export backup, with the version. The site links
+come from `ABOUT_CONFIG.siteUrl` / `privacyUrl` in `config.js`.
 
 ## Reminders
 The bell on the dock (or Command Center → "New Reminder") opens Reminders:
@@ -72,12 +80,10 @@ schedule.
 
 ## Language & voice
 Customize → **Language** (or Command Center → "Language & Translation").
-- **Translate** — pick a language and every website you open is translated
-  into it, plus the new tab itself (`translate.js`, a content script; the
-  words go through Google Translate from `background.js`). Content that
-  loads later is translated as it arrives. A small badge on each page offers
-  **Show original** and **Never here**; pages already in that language are
-  left alone. Chrome's *own* menus can't be changed by an extension — the
+- **Translate** — pick a language and the Atlas new tab page itself is
+  shown in it (`translate.js`, loaded by `index.html` only; the words go
+  through Google Translate from `background.js`). Other websites are never
+  translated. Chrome's *own* menus can't be changed by an extension — the
   "Chrome's own language…" button opens `chrome://settings/languages`.
 - **Voice typing** — a mic on the search bar (searches when you stop
   talking) and in the assistant. "Listen for" sets the spoken language.
@@ -93,9 +99,10 @@ Customize → **Language** (or Command Center → "Language & Translation").
 
 ## Quick tools (bottom right)
 Two buttons in the corner: **Quick tools** (⊞) and the ✦ chat
-(`quicktools.js`). Quick tools opens a grid — Notes & Goals, Optimize,
-Site blocker, Daily quote — and each tool opens in
-the same panel (← back to the grid, Esc steps back).
+(`quicktools.js`). Quick tools opens a grid — Focus, Day planner, Calendar,
+Stats, Notes & Goals, Daily quote — and each tool opens in
+the same panel (← back to the grid, Esc steps back). Minimal mode's
+settings open there too, from its own button (see below).
 - **Notes & Goals** — *Goals*: each goal has a progress bar (green at 100%)
   and its tasks; every task has its own **Complete** button (the task turns
   green; click again to undo) and an optional date, time and day. With
@@ -103,23 +110,11 @@ the same panel (← back to the grid, Esc steps back).
   and rings anywhere in Chrome; completing or deleting the task removes it.
   The bubble shows how many tasks are due. *Notes*: quick notes (Ctrl+Enter
   adds one), editable in place. Stored under `qt:tasks`, on this computer.
-- **Optimize** — the open tabs (switch, sleep or close each), **Close
-  duplicates**, **Sleep tabs** (frees memory; they reload when opened),
-  **Undo sleep**, **Undo close** (reopens the last closed batch), and
-  **Auto optimize**: sleep tabs unused for 15 min–4 h, and close a tab that
-  opens a page already open (switching to the existing one). Pinned, playing
-  and active tabs are never touched. `background.js` runs the automatic part.
-- **Tab manager** — this window's tabs; name them and **Save** to keep them
-  as a session, then **Open** it in a new window or **Add here** later
-  (list or grid view). Free accounts keep 3 sessions (`PRO_CONFIG.freeSessions`),
-  Pro up to 50. Stored under `qt:sessions` and synced with the account.
-- **Extensions** — your other extensions with search, All / Active / Off,
-  and a switch for each. Chrome's `management` permission is *optional*: the
-  view asks for it the first time, so installing Atlas never needs it.
-- **Site blocker**, **Daily quote** — their settings, below.
-- Under the grid: **Feedback** (email, `ABOUT_CONFIG.feedbackEmail`), **Rate
-  us** and **Share** (the Chrome Web Store page, `ABOUT_CONFIG.storeUrl`), and
-  FAQs · Changelog · Privacy Policy · Export Backup, with the version.
+- **Focus**, **Day planner**, **Calendar**, **Stats**, **Daily quote** —
+  their own sections, below.
+- The footer at the bottom of Customize has **Feedback** (email,
+  `ABOUT_CONFIG.feedbackEmail`), **Rate us** and **Share** (the Chrome Web
+  Store page, `ABOUT_CONFIG.storeUrl`); FAQs and Changelog open here.
 
 Zen clock and minimal mode are the two round buttons at the bottom left,
 styled like these two; hovering one shows its name.
@@ -129,9 +124,7 @@ Quick tools → **Focus**, Command Center → "Start Focus", or the timer pill
 (`focus.js`). You focus for 25 minutes, then take a 5-minute break, and
 every 4th break is 15 minutes. All of these can be changed. While you
 focus:
-- the Site blocker's list is blocked, even if the blocker is off, and the
-  blocked page offers no 5-minute break
-- the wallpaper dims
+- the wallpaper dims (can be turned off)
 - a pill at the top of the page shows the time left, with pause and stop
 
 When time's up, you hear a sound (any reminder sound, your own, or none)
@@ -155,17 +148,14 @@ They're stored in `qt:habits`. Free accounts track up to
 Quick tools → **Stats**, or Command Center → "Stats" (`stats.js`). It shows:
 - time focused and focus sessions
 - tasks done and habits ticked off
-- time on the web and blocked visits
-- focus by day and web time by day, as bar charts
-- where your time went (the top sites)
-- the most blocked sites
+- focus by day and tasks done by day, as bar charts
 
-`background.js` counts the seconds on the site in front of you. It only
-counts while Chrome is focused and you're at the computer, or while the tab
-is playing sound. It keeps 62 days in `stats:days`, on this computer only.
+Everything comes from what you do on the new tab itself (`focus:history`,
+`qt:tasks`, `qt:habits`); nothing about other websites is recorded.
 Free accounts see today. Pro sees 7 and 30 days and can turn on a **weekly
-summary email** (sent on Mondays). For the email, the page sends this
-week's and last week's totals to the backend, at most every 3 hours.
+summary email** (sent on Mondays) with just those numbers. For the email,
+the page sends this week's and last week's totals to the backend, at most
+every 3 hours.
 
 ## Automatic sync (Pro)
 Customize → Account → **Sync automatically** (`sync.js`). These stay the
@@ -276,15 +266,6 @@ show the wallpaper, a background colour instead, and other places' time —
 type a city, a country or a time zone ("Karachi", "Japan", "Europe/Paris").
 Esc closes it.
 
-## Site blocker
-Quick tools → **Site blocker**: a list of sites (or one-click groups: Social,
-Video, News, Shopping) that open a "This site is blocked" page
-(`blocked.html`) instead — always, or only on chosen days between two times.
-The blocked page can offer a 5-minute break, and shows your own message.
-`background.js` turns the list into `declarativeNetRequest` rules and
-re-checks the schedule every minute; tabs already open on a blocked site
-switch to the blocked page too.
-
 ## Account (Google sign-in)
 Customize → **Account** signs in with Google through the backend in
 `backend/` (`account.js`). Signed in, it shows your profile and plan, and can:
@@ -311,8 +292,12 @@ The starting content lives in **`config.js`**:
   (the launcher's tabs) + shortcuts (name, url, icon). A workspace can set
   `icon: "home" | "work" | "globe" | "game" | "folder" | "book" | "code" | "music"`.
 - `WEATHER_CONFIG` — °C / °F and an optional fixed city for the weather card
-- `SEARCH_URL` — search engine
 - `AI_CONFIG.endpoint` — your assistant endpoint
+- `ABOUT_CONFIG` — feedback email, store URL, and the website
+  (`siteUrl`, `https://atlas.aqibawan.com`) and `privacyUrl` for the footer
+
+There is no search setting: the bar always uses the browser's default engine.
+The `!keyword` site searches are listed in `ENGINES` in `customize.js`.
 
 ## AI assistant
 The ✦ chat (bottom right) is answered by Google Gemini through a small server
@@ -342,35 +327,32 @@ Change the model with `GEMINI_MODEL`. Never put an API key in the
 extension itself. Any server works if it takes `POST { messages: [{role, content}] }`
 and returns `{ "reply": "..." }`.
 
-## Now playing
-The card above the Zen clock / Minimal buttons (bottom left) shows whatever is playing in
-another browser tab (Spotify, YouTube Music, YouTube, SoundCloud, Deezer, Apple
-Music, or any site that uses the browser's media controls), with artwork,
-previous / play-pause / next, and a seekable progress bar. Click the title to
-jump to that tab. It hides itself when nothing has played.
-
-- `media-bridge.js` / `media-relay.js` run on web pages and report the track.
-- `background.js` picks which tab to show and forwards the button presses.
-
-Tabs that were already open when the extension was installed or reloaded need
-one refresh before they are picked up. Desktop apps (the Spotify app, VLC, ...)
-are outside the browser and are not shown.
-
 ## Permissions
-- `storage` — remembers wallpaper, workspace and most-used shortcuts.
-- Content scripts on `http(s)://*/*` — needed to read the now-playing info
-  from music sites. Chrome shows this as "read and change data on all
-  websites"; the scripts only read media metadata and never send anything
-  outside the browser.
+Atlas does one thing — replace the new tab page — so it runs no scripts on
+other websites (no content scripts, no `web_accessible_resources`).
+- `storage` — settings, shortcuts, notes, reminders, focus history and the
+  rest of the page's data.
+- `search` — the search bar hands the query to the browser's default search
+  engine (`chrome.search.query`).
+- `alarms` — reminders (and their snooze) and the focus timer fire on time
+  with no new tab open (`background.js`).
+- `notifications` — the system notification when a reminder rings or a
+  focus phase ends (Snooze / Dismiss).
+- `offscreen` — plays the looping alarm sound from `alarm.html`.
+- `identity` — the Google sign-in popup (Customize → Account) and the
+  read-only Google Calendar token.
 
-- `identity` — the Google sign-in popup (Customize → Account).
-- `declarativeNetRequestWithHostAccess` — the site blocker; it uses the
-  host access the extension already has, so Chrome shows no new warning.
-- `idle` — Stats counts time on a site only while you're at the computer.
-  Chrome shows no warning for it.
-- The translator content script (`languages.js`, `translate.js`) does
-  nothing until a language is picked; then it sends page text to Google
-  Translate.
+`host_permissions` are a short list of the hosts the page talks to, not all
+sites:
+- `atlas-assistant-backend.vercel.app` — the backend (account, Pro,
+  assistant, day planner, live wallpapers, weekly email)
+- `*.chromiumapp.org` — the sign-in redirect
+- `www.googleapis.com`, `oauth2.googleapis.com` — Google profile and Calendar
+- `translate.googleapis.com` — translating the new tab page
+- `api.open-meteo.com`, `geocoding-api.open-meteo.com`,
+  `api.bigdatacloud.net` — weather and the city name
+- `wallhaven.cc`, `pixabay.com`, `wallpaperwaves.com` (and their
+  subdomains / CDNs) — the online wallpapers
 
-Everything works offline except Google search, translation, voice typing
+Everything works offline except web search, translation, voice typing
 and the optional assistant.

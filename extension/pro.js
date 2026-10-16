@@ -90,7 +90,6 @@
   const PERKS = [
     ["palette", "Every theme & cursor", "All presets, your own colours, glass and fonts, every cursor"],
     ["image", "Unlimited 4K wallpapers", "Stills and live videos — free accounts get " + FREE_WALLPAPERS],
-    ["shield", "Site blocker", "Block distracting sites, on a schedule or all day"],
     ["lock", "Private space", "An encrypted corner for what's only yours"],
     ["mic", "Voice typing & assistant voice", "Talk to search and chat, hear answers read out"],
     ["cloud", "Sync & backup", "Everything in step on every computer"],

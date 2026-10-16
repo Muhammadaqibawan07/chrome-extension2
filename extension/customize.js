@@ -77,10 +77,7 @@
     /* translation (translate.js) and voice (voice.js). `lang` is a
        languages.js code; "auto" follows it, or the browser's language. */
     language: {
-      lang: "",          // websites + this page are translated into it; "" = off
-      pages: true,       // translate websites
-      newtab: true,      // translate this new tab
-      badge: true,       // the small "Translated" badge on websites
+      lang: "",          // this new tab is translated into it; "" = off
       voiceLang: "auto", // the language voice typing listens for
       searchMic: true,   // mic on the search bar
       searchAuto: true,  // search as soon as you stop talking
@@ -92,18 +89,6 @@
         custom: [],      // your voices: { id, name, voice (system voice, "" = auto), rate, pitch, volume }
       },
     },
-    /* the site blocker (background.js applies it). sites: bare domains;
-       days: 0 = Sunday … 6 = Saturday */
-    blocker: {
-      on: false,
-      sites: [],
-      schedule: false,
-      days: [1, 2, 3, 4, 5],
-      from: "09:00",
-      to: "17:00",
-      breaks: true,   // "Take a 5-minute break" on the blocked page
-      message: "",
-    },
     /* the focus timer (focus.js; background.js keeps the clock). Minutes
        per phase; a long break after every `every` focus sessions */
     focus: {
@@ -111,7 +96,6 @@
       short: 5,
       long: 15,
       every: 4,
-      block: true,      // block the site blocker's list while focusing
       dim: true,        // dim the wallpaper while focusing
       sound: "chime",   // a sounds.js id, "custom" or "none"
       autoBreak: true,  // a break starts by itself when focus ends
@@ -121,20 +105,13 @@
     },
     /* your own quotes for the daily quote: { id, text, author } */
     quotes: { custom: [] },
-    /* auto optimize (quick tools > Optimize; background.js runs it) */
-    optimize: {
-      auto: false,
-      sleep: true,     // sleep tabs unused for `sleepAfter` minutes
-      sleepAfter: 30,
-      dedupe: false,   // close a tab that opens a page already open
-    },
     /* minimal mode (minimal.js): only the widgets in `keep` stay. mode:
        "off", "on", or "auto" = during the times in `rules`
        ({ id, days (0 = Sunday), from, to }) */
     minimal: {
       mode: "off",
       rules: [],
-      keep: { clock: true, weather: false, search: false, dock: false, media: false, wallpaper: false, peek: false, ai: false, quote: false },
+      keep: { clock: true, weather: false, search: false, dock: false, wallpaper: false, peek: false, ai: false, quote: false },
       dim: 0,          // extra darkening of the background, %
       exit: true,      // the small "Minimal · Exit" button
       v: 2,            // 2: the search bar hides too (it used to stay by default)
@@ -165,12 +142,8 @@
         panelAlpha: 40,
       },
       search: widget({
-        engine: "google", // a built-in id, or a custom engine's "c-…" id
-        customUrl: "",    // pre-list single custom URL, migrated on load
-        engines: [],      // custom engines: { id, name, url, key }
         history: true,    // remember searches (shown only in the history panel)
       }),
-      media: widget(),
       wallpaper: widget(),
       peek: widget(),
       ai: widget({
@@ -218,44 +191,21 @@
     ["fade", "Fade"],
   ];
 
-  /* built-in search engines. `key` is the !keyword that sends one search
-     there ("!yt cats"); `icon` is a key in config.js ICONS, otherwise the
-     bar draws `mono` on a `tint` badge. A URL marks the query with %s, or
-     the query is appended. Users add their own (widgets.search.engines). */
-  const googleUrl = typeof SEARCH_URL !== "undefined" ? SEARCH_URL : "https://www.google.com/search?q=";
+  /* search targets. "web" is the browser's own default search engine,
+     reached through chrome.search (Chrome Web Store policy: a new tab's
+     web search must follow the user's search settings), and every
+     ordinary search goes there. The rest are site searches that one
+     search can be sent to with a !keyword ("!yt cats"); `icon` is a key in
+     config.js ICONS, otherwise the bar draws `mono` on a `tint` badge. A
+     URL marks the query with %s, or the query is appended. */
   const ENGINES = {
-    google: { label: "Google", url: googleUrl, key: "g", icon: "google" },
+    web: { label: "Web", hint: "Your browser's search engine", web: true, mono: "⌕" },
     youtube: { label: "YouTube", url: "https://www.youtube.com/results?search_query=", key: "yt", icon: "youtube" },
     github: { label: "GitHub", url: "https://github.com/search?q=%s&type=repositories", key: "gh", icon: "github" },
     wikipedia: { label: "Wikipedia", url: "https://en.wikipedia.org/w/index.php?search=", key: "w", icon: "wikipedia" },
     chatgpt: { label: "ChatGPT", url: "https://chatgpt.com/?q=", key: "gpt", mono: "✺", tint: "#10a37f" },
     amazon: { label: "Amazon", url: "https://www.amazon.com/s?k=", key: "a", mono: "a", tint: "#ff9900" },
-    bing: { label: "Bing", url: "https://www.bing.com/search?q=", key: "b", mono: "b", tint: "#2b7fd9" },
-    duckduckgo: { label: "DuckDuckGo", url: "https://duckduckgo.com/?q=", key: "d", mono: "D", tint: "#de5833" },
-    brave: { label: "Brave", url: "https://search.brave.com/search?q=", key: "br", mono: "B", tint: "#fb542b" },
   };
-  const MAX_CUSTOM_ENGINES = 12;
-  const isSearchUrl = (u) => /^https?:\/\/[^\s]+$/i.test(String(u || "").trim());
-  const cleanKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10);
-
-  /* the user's own engines: a list, which merge() can't check, so it is
-     cleaned here. An old single "Custom" URL becomes the first entry. */
-  function normalizeEngines(list, legacyUrl) {
-    const out = [];
-    const ids = new Set();
-    (Array.isArray(list) ? list : []).forEach((e) => {
-      if (!e || typeof e !== "object" || out.length >= MAX_CUSTOM_ENGINES) return;
-      const name = String(e.name || "").trim().slice(0, 30);
-      const url = String(e.url || "").trim();
-      if (!name || !isSearchUrl(url)) return;
-      let id = typeof e.id === "string" && /^c-[\w-]+$/.test(e.id) ? e.id : "c-" + Date.now().toString(36) + out.length;
-      while (ids.has(id)) id += "x";
-      ids.add(id);
-      out.push({ id, name, url, key: cleanKey(e.key) });
-    });
-    if (!out.length && isSearchUrl(legacyUrl)) out.push({ id: "c-legacy", name: "Custom", url: legacyUrl.trim(), key: "" });
-    return out;
-  }
 
   /* the floating widgets that can be moved and resized. `origin` is the
      scaling anchor in their default spot; `w` / `h` mark an explicit width /
@@ -263,7 +213,6 @@
   const WIDGETS = {
     clock: { sel: ".clock", label: "Clock", origin: "top left" },
     search: { sel: ".search", label: "Search bar", origin: "left bottom", w: true, h: true },
-    media: { sel: ".media", label: "Now playing", origin: "bottom left", w: true },
     wallpaper: { sel: ".wp-control", label: "Zen & minimal buttons", origin: "bottom left" },
     peek: { sel: ".peek", label: "Quick Peek", origin: "top right" },
     ai: { sel: ".ai", label: "Assistant", origin: "bottom right" },
@@ -290,25 +239,12 @@
   function load(over) {
     const next = merge(clone(DEFAULTS), over);
     if (window.AtlasCursors) next.cursor = AtlasCursors.normalize(over && over.cursor);
-    const s = next.widgets.search;
-    const src = over && over.widgets && over.widgets.search;
-    s.engines = normalizeEngines(src && src.engines, s.customUrl);
-    s.customUrl = ""; // migrated into the list; don't bring it back later
-    if (s.engine === "custom") s.engine = s.engines[0] ? s.engines[0].id : "google";
     next.background.schedule = normalizeWpSchedule(over && over.background && over.background.schedule);
     const ai = next.language.ai;
     ai.custom = normalizeVoices(over && over.language && over.language.ai && over.language.ai.custom);
     const knownVoice = (id) => ai.custom.some((c) => c.id === id) ||
       (window.AtlasVoice ? AtlasVoice.PRESETS.some((p) => p.id === id) : id === "atlas");
     if (!knownVoice(ai.voice)) ai.voice = "atlas";
-    const bl = over && over.blocker;
-    next.blocker.sites = normalizeSites(bl && bl.sites);
-    next.blocker.days = bl && Array.isArray(bl.days)
-      ? [...new Set(bl.days.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
-      : clone(DEFAULTS.blocker.days);
-    if (!/^\d{2}:\d{2}$/.test(next.blocker.from)) next.blocker.from = DEFAULTS.blocker.from;
-    if (!/^\d{2}:\d{2}$/.test(next.blocker.to)) next.blocker.to = DEFAULTS.blocker.to;
-    next.blocker.message = next.blocker.message.slice(0, 200);
     next.zen.places = normalizePlaces(over && over.zen && over.zen.places);
     if (!["off", "on", "auto"].includes(next.minimal.mode)) next.minimal.mode = "off";
     next.minimal.rules = normalizeMinRules(over && over.minimal && over.minimal.rules);
@@ -350,19 +286,6 @@
         days, from: r.from, to: r.to,
       };
     }).filter(Boolean);
-  }
-
-  /* blocked sites: bare domains ("https://www.youtube.com/x" -> "youtube.com") */
-  const MAX_SITES = 300;
-  function cleanSite(v) {
-    let t = String(v || "").trim().toLowerCase();
-    if (!t) return "";
-    try { t = new URL(/^[a-z]+:\/\//.test(t) ? t : "http://" + t).hostname; } catch { return ""; }
-    t = t.replace(/^www\./, "").replace(/\.$/, "");
-    return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(t) ? t : "";
-  }
-  function normalizeSites(list) {
-    return [...new Set((Array.isArray(list) ? list : []).map(cleanSite).filter(Boolean))].slice(0, MAX_SITES);
   }
 
   /* Zen clock places: a list, so checked here rather than by merge() */
@@ -645,10 +568,6 @@
         ":root{--launcher-top:calc(var(--edge) + " +
           (clockAway ? "0px" : "var(--clock-h) + 20px") + " + " + dockY + "px)}"
       );
-    }
-    /* the launcher stops above Now Playing only while it is in its spot */
-    if (!w.media.show || w.media.pos !== "auto") {
-      css.push("body.has-media{--launcher-bottom:calc(var(--edge) + 58px)}");
     }
 
     if (!dock.show) css.push(".rail,.launcher{display:none!important}");
@@ -1014,16 +933,6 @@
       next.theme = plain;
       changed = true;
     }
-    /* the site blocker is Pro: stop blocking, by itself or while focusing
-       (the list is kept) */
-    if (next.blocker && next.blocker.on) {
-      next.blocker.on = false;
-      changed = true;
-    }
-    if (next.focus && next.focus.block) {
-      next.focus.block = false;
-      changed = true;
-    }
     if (V && V.isUnlocked && V.isUnlocked()) V.lock();
     if (next.cursor && !free.freeCursor(next.cursor.style)) {
       next.cursor.style = "default";
@@ -1162,8 +1071,7 @@
 
         out.push(group("Options",
           rangeRow("Size", "cursor.size", 16, 96, 2, "px"),
-          toggleRow("Use on all websites", "cursor.everywhere"),
-          note("Open tabs switch right away. Chrome's own pages (settings, the Web Store) always keep the system cursor, and sizes over 32px turn back to the normal cursor near the window edge.")));
+          note("The cursor is used on this new tab page only. Sizes over 32px turn back to the normal cursor near the window edge.")));
         return out;
       },
     },
@@ -1194,10 +1102,9 @@
           colorRow("Box colour", "widgets.dock.panelColor", { when: (s) => !s.widgets.dock.panelMatch }),
           rangeRow("Box opacity", "widgets.dock.panelAlpha", 0, 100, 1, "%", { when: (s) => !s.widgets.dock.panelMatch })),
         card("search", "Search bar", "widgets.search.show",
-          selectRow("Default engine", "widgets.search.engine", engines().map((e) => [e.id, e.label])),
-          note("Switch engines from the icon at the left of the bar, or send one search elsewhere with a keyword: " +
-            engines().filter((e) => e.key).slice(0, 6).map((e) => "!" + e.key + " " + e.label).join(" · ") + "."),
-          engineEditor(),
+          note("The bar searches with your browser's default search engine — change it in Chrome's settings. " +
+            "To search one site instead, pick it from the icon at the left of the bar or start with its keyword: " +
+            engines().filter((e) => e.key).map((e) => "!" + e.key + " " + e.label).join(" · ") + "."),
           toggleRow("Remember searches", "widgets.search.history"),
           note("History stays in its own panel (the clock on the bar) and never shows under what you type. It stays on this computer."),
           h("div", { class: "cz-btns" },
@@ -1211,7 +1118,6 @@
               },
             })),
           ...placement("widgets.search")),
-        card("media", "Now playing", "widgets.media.show", ...placement("widgets.media")),
         card("wallpaper", "Zen clock & minimal buttons", "widgets.wallpaper.show", ...placement("widgets.wallpaper")),
         card("peek", "Quick Peek", "widgets.peek.show", ...placement("widgets.peek")),
         card("quote", "Daily quote", "widgets.quote.show",
@@ -1306,7 +1212,6 @@
   const Langs = window.AtlasLangs;
   const Voice = window.AtlasVoice;
   const langOptions = (first) => [first].concat(Langs ? Langs.list.map((l) => [l.code, Langs.label(l)]) : []);
-  const NEVER_KEY = "translate:never";
   /* language names stay in their own words; the first choice translates */
   const noTranslate = (el) => {
     [...el.querySelector("select").options].slice(1).forEach((o) => o.setAttribute("translate", "no"));
@@ -1316,13 +1221,9 @@
   function languageTab() {
     const out = [];
     out.push(group("Translate",
-      note("Pick a language and every website you open is translated into it, along with this page. Chrome's own menus follow Chrome's setting, below."),
-      noTranslate(selectRow("Language", "language.lang", langOptions(["", "Off — keep pages as they are"]))),
-      toggleRow("Translate websites", "language.pages", { when: (s) => !!s.language.lang }),
-      toggleRow("Translate this new tab", "language.newtab", { when: (s) => !!s.language.lang }),
-      toggleRow("Show the “Translated” badge", "language.badge", { when: (s) => !!s.language.lang && s.language.pages }),
-      neverList(),
-      note("Pages are translated by Google Translate, so their text is sent to it. Pages already in your language are left alone."),
+      note("Pick a language and this new tab page is shown in it. Chrome's own menus follow Chrome's setting, below."),
+      noTranslate(selectRow("Language", "language.lang", langOptions(["", "Off — keep it in English"]))),
+      note("The new tab's text is translated by Google Translate, so that text is sent to it. Atlas never translates other websites."),
       h("div", { class: "cz-btns" },
         h("button", {
           type: "button", class: "cz-btn", text: "Chrome's own language…",
@@ -1346,27 +1247,6 @@
       voicePicker(),
       customVoices()));
     return out;
-  }
-
-  /* sites switched off from the badge ("Never here") */
-  function neverList() {
-    const box = h("div", { class: "cz-never" });
-    const paint = (list) => {
-      box.textContent = "";
-      if (!list.length) return;
-      box.append(h("span", { class: "cz-label", text: "Never translated" }));
-      list.forEach((host) => box.append(h("span", { class: "cz-chip", translate: "no" }, host,
-        h("button", {
-          type: "button", "aria-label": "Translate " + host + " again", title: "Translate again", text: "✕",
-          onclick: () => {
-            const next = list.filter((x) => x !== host);
-            store.set(NEVER_KEY, next).then(() => paint(next));
-          },
-        }))));
-    };
-    if (hasChrome) chrome.storage.local.get([NEVER_KEY], (o) => paint(Array.isArray(o[NEVER_KEY]) ? o[NEVER_KEY] : []));
-    conds.push([box, (s) => !!s.language.lang]);
-    return box;
   }
 
   /* what a voice sounds like, in the language it will speak */
@@ -2050,74 +1930,6 @@
       row("", h("div", { class: "cz-btns" }, list.length < MAX_WP_RULES ? add : note("That's as many changes as fit.")), { stack: true, when: on }));
   }
 
-  /* ---- custom search engines: edit in place, add below ---- */
-  function engineEditor() {
-    const list = settings.widgets.search.engines;
-    const commit = () => { set("widgets.search.engines", list); renderTab(); };
-    /* a keyword already used by another engine would be ambiguous */
-    const keyTaken = (key, selfId) => !!key && engines().some((e) => e.key === key && e.id !== selfId);
-    const input = (value, placeholder, label, extra) => h("input", Object.assign({
-      class: "cz-text", type: "text", value, placeholder, spellcheck: "false", "aria-label": label,
-    }, extra));
-
-    const rows = list.map((e, i) => {
-      const msg = h("p", { class: "cz-msg is-error", hidden: true });
-      const name = input(e.name, "Name", "Engine name", { maxlength: 30 });
-      const key = input(e.key ? "!" + e.key : "", "!key", "Keyword", { class: "cz-text cz-eng-key" });
-      const url = input(e.url, "https://example.com/search?q=%s", "Search URL");
-      const fail = (t) => { msg.textContent = t; msg.hidden = false; };
-      const save = () => {
-        const k = cleanKey(key.value);
-        if (!name.value.trim()) return fail("Give it a name.");
-        if (!isSearchUrl(url.value)) return fail("The URL must start with http:// or https://");
-        if (keyTaken(k, e.id)) return fail("!" + k + " is already used by another engine.");
-        msg.hidden = true;
-        Object.assign(list[i], { name: name.value.trim().slice(0, 30), url: url.value.trim(), key: k });
-        key.value = k ? "!" + k : "";
-        set("widgets.search.engines", list);
-      };
-      [name, key, url].forEach((el) => el.addEventListener("change", save));
-      return h("div", { class: "cz-eng" },
-        h("div", { class: "cz-eng-top" }, name, key,
-          h("button", {
-            type: "button", class: "cz-eng-del", "aria-label": "Delete " + e.name, title: "Delete", text: "✕",
-            onclick: () => {
-              list.splice(i, 1);
-              if (settings.widgets.search.engine === e.id) settings.widgets.search.engine = "google";
-              commit();
-            },
-          })),
-        url, msg);
-    });
-
-    const name = input("", "Name, e.g. Stack Overflow", "New engine name", { maxlength: 30 });
-    const key = input("", "!so", "New engine keyword", { class: "cz-text cz-eng-key" });
-    const url = input("", "https://stackoverflow.com/search?q=%s", "New engine URL");
-    const msg = h("p", { class: "cz-msg is-error", hidden: true });
-    const add = h("form", {
-      class: "cz-eng is-new",
-      onsubmit: (ev) => {
-        ev.preventDefault();
-        const k = cleanKey(key.value);
-        const fail = (t) => { msg.textContent = t; msg.hidden = false; };
-        if (!name.value.trim()) return fail("Give it a name.");
-        if (!isSearchUrl(url.value)) return fail("The URL must start with http:// or https:// — put %s where the search goes.");
-        if (keyTaken(k)) return fail("!" + k + " is already used by another engine.");
-        list.push({ id: "c-" + Date.now().toString(36), name: name.value.trim().slice(0, 30), url: url.value.trim(), key: k });
-        commit();
-      },
-    },
-    h("div", { class: "cz-eng-top" }, name, key),
-    url,
-    h("div", { class: "cz-btns" }, h("button", { type: "submit", class: "cz-btn is-primary", text: "Add engine" })),
-    msg);
-
-    return h("div", { class: "cz-engs" },
-      h("span", { class: "cz-label", text: "Custom engines" }),
-      ...rows,
-      list.length < MAX_CUSTOM_ENGINES ? add : note("That's the most custom engines there's room for."));
-  }
-
   function exportSettings() {
     const blob = new Blob([JSON.stringify({ atlas: "appearance", v: 1, settings }, null, 2)], { type: "application/json" });
     const a = h("a", { href: URL.createObjectURL(blob), download: "atlas-appearance.json" });
@@ -2797,20 +2609,14 @@
      private space workspaces, vaultSeed, vaultData, openVault */
   const app = {};
 
-  /* every engine, built-ins first, in one shape:
-     { id, label, url, key, icon?, mono?, tint?, custom? } */
+  /* every engine, the browser's own first, in one shape:
+     { id, label, url?, key?, web?, icon?, mono?, tint? } */
   function engines() {
-    const out = Object.entries(ENGINES).map(([id, e]) => Object.assign({ id }, e));
-    settings.widgets.search.engines.forEach((e) => out.push({
-      id: e.id, label: e.name, url: e.url, key: e.key, mono: e.name[0].toUpperCase(), custom: true,
-    }));
-    return out;
+    return Object.entries(ENGINES).map(([id, e]) => Object.assign({ id }, e));
   }
   const findEngine = (id) => engines().find((e) => e.id === id) || null;
-  /* the default engine; a deleted custom one falls back to Google */
-  function engine() {
-    return findEngine(settings.widgets.search.engine) || findEngine("google");
-  }
+  /* the default is always the browser's own search engine */
+  const engine = () => findEngine("web");
 
   const ready = store.get(KEY).then((raw) => {
     try {
@@ -2843,6 +2649,6 @@
     exportSettings,
     dropPro,
     /* the checks settings go through, for panels outside Customize */
-    clean: { site: cleanSite, sites: normalizeSites, minRules: normalizeMinRules, quotes: normalizeQuotes },
+    clean: { minRules: normalizeMinRules, quotes: normalizeQuotes },
   };
 })();

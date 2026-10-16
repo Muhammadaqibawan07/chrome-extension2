@@ -10,25 +10,21 @@ export const Route = createFileRoute("/privacy")({
 
 function Privacy() {
   return (
-    <DocPage title="Privacy policy" updated="October 12, 2026">
+    <DocPage title="Privacy policy" updated="October 16, 2026">
       <p>
         Atlas New Tab ("Atlas", "the extension") replaces Chrome's new tab page with shortcuts, search, wallpapers,
-        weather, a media widget, small productivity tools and an optional assistant. This page explains what data Atlas
-        handles and where it goes. We don't sell your data, show ads, or use your data for advertising.
+        weather, small productivity tools and an optional assistant. Atlas runs only on its own new tab page: it has no
+        access to the websites you visit. This page explains what data Atlas handles and where it goes. We don't sell your data, show ads, or use your data for advertising.
       </p>
 
       <h2>1. Data that stays on your device</h2>
       <p>Saved in your browser (chrome.storage, localStorage, IndexedDB) and never sent to us unless you turn on sync:</p>
       <ul>
         <li>Workspaces, shortcut cards and links</li>
-        <li>Theme, appearance, cursor and search-engine choices</li>
+        <li>Theme, appearance and cursor choices, and your recent searches (if you keep search history on)</li>
         <li>Wallpaper choice and any image or video you upload</li>
         <li>Notes, habits, reminders, focus history and the private space</li>
         <li>A city name you enter for weather</li>
-        <li>
-          Screen-time stats: how long the active tab spends on each website, recorded as the site's domain only (for
-          example "youtube.com", never the full address or page content) and kept for about two months
-        </li>
       </ul>
       <p>Uninstalling the extension or choosing "Reset to defaults" deletes this data.</p>
 
@@ -38,7 +34,7 @@ function Privacy() {
         profile picture and Google account ID, your plan, and the number of assistant messages you've sent each day (to
         apply the daily limit). If you use backup or automatic sync, we store a copy of the settings and data listed
         above so it can be restored on your other computers; the private space stays encrypted with your password, which
-        we never receive. If you turn on the weekly email (off by default), your weekly screen-time summary (time per site domain) is uploaded so we can email it to you.
+        we never receive. If you turn on the weekly email (off by default), your weekly summary (minutes focused, tasks done and habits ticked off) is uploaded so we can email it to you.
       </p>
       <p>
         If you allow calendar access, Atlas reads your Google Calendar events in your browser to show them and to plan
@@ -178,7 +174,7 @@ function Privacy() {
           </tr>
           <tr>
             <td>Weekly email</td>
-            <td>Your email address and weekly stats</td>
+            <td>Your email address and weekly stats (focus, tasks, habits)</td>
             <td>Resend, which delivers the email</td>
           </tr>
           <tr>
@@ -194,7 +190,15 @@ function Privacy() {
           <tr>
             <td>Search</td>
             <td>What you search for</td>
-            <td>The search engine you picked; your browser opens it directly</td>
+            <td>
+              Your browser's default search engine, through Chrome's search API. Searches starting with a site keyword
+              (such as !yt) open that site's search directly.
+            </td>
+          </tr>
+          <tr>
+            <td>Translate (off by default)</td>
+            <td>The text of the Atlas new tab page, never other websites</td>
+            <td>Google Translate</td>
           </tr>
         </tbody>
       </table>
@@ -209,25 +213,24 @@ function Privacy() {
           <b>identity</b> lets you sign in with Google.
         </li>
         <li>
-          <b>scripting and site access</b> detect media playing in your tabs for the now-playing widget, send play/pause
-          and skip to it, and apply your custom cursor on web pages.
+          <b>search</b> sends what you type in the search bar to your browser's default search engine, so Atlas always
+          respects your own search settings.
         </li>
         <li>
           <b>alarms and notifications</b> fire your reminders and focus-timer alerts.
         </li>
         <li>
-          <b>declarativeNetRequest</b> blocks the distracting sites you choose, only while a focus session is running.
+          <b>offscreen</b> plays alarm and focus sounds.
         </li>
         <li>
-          <b>offscreen</b> plays alarm and focus sounds; <b>idle</b> pauses focus tracking while you're away.
-        </li>
-        <li>
-          <b>management</b> (optional, asked for only if you use it) lists your installed extensions in Quick tools.
+          <b>Access to specific sites</b> (our server, Google sign-in and Calendar, Google Translate, Open-Meteo,
+          BigDataCloud, Wallhaven, Pixabay and WallpaperWaves) lets the new tab load the features listed above. Atlas has
+          no access to any other website.
         </li>
       </ul>
       <p>
-        Apart from the per-domain screen-time stats described above, Atlas does not read, collect or send page content,
-        form input or your browsing history.
+        Atlas has no content scripts and does not read, change, collect or send the content of web pages, form input
+        or your browsing history.
       </p>
 
       <h2>7. Children</h2>

@@ -7,10 +7,6 @@
         optional date + time; with the bell on, the task rings like any
         reminder (it is written into the Reminders list, which
         background.js rings anywhere in Chrome).
-     ⚡ Optimize — the open tabs, closing duplicates, putting tabs to sleep
-        (and waking them), undoing the last close, and auto optimize
-        (settings.optimize; background.js runs it).
-     ⊘  Site blocker — settings.blocker (background.js applies it)
      ▢  Minimal mode — settings.minimal (minimal.js applies it). Not in
         the grid: the minimal button beside the wallpaper toggle switches
         it, and its right-click opens these settings.
@@ -29,7 +25,6 @@
 
   const TASKS_KEY = "qt:tasks";
   const REM_KEY = "reminders";
-  const CLOSED_KEY = "qt:closed";
   const hasChrome = typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
   const hasTabs = hasChrome && chrome.tabs && chrome.tabs.query;
   const read = (k, fb) => new Promise((r) => (hasChrome ? chrome.storage.local.get([k], (o) => r(o[k] === undefined ? fb : o[k])) : r(fb)));
@@ -56,8 +51,6 @@
     back: '<path d="M15 5.5 8.5 12l6.5 6.5"/>',
     chat: '<path d="M12 3.5 13.9 10.1 20.5 12l-6.6 1.9L12 20.5l-1.9-6.6L3.5 12l6.6-1.9z"/>',
     tasks: '<rect x="4.5" y="4.5" width="15" height="15" rx="3.5"/><path d="m8.5 12 2.4 2.4 4.6-4.8"/>',
-    bolt: '<path d="M13 3.5 5.5 13.5H12l-1 7 7.5-10H12z"/>',
-    block: '<circle cx="12" cy="12" r="8"/><path d="M6.4 6.4l11.2 11.2"/>',
     zen: '<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>',
     minimal: '<rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M9 12h6"/>',
     quote: '<path d="M9.5 7C6.8 7.8 5 10.1 5 13v4h5v-5H7.6c.2-1.7 1.3-3 2.9-3.6zM18.5 7c-2.7.8-4.5 3.1-4.5 6v4h5v-5h-2.4c.2-1.7 1.3-3 2.9-3.6z"/>',
@@ -71,8 +64,6 @@
     copy: '<rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 15V6a1 1 0 0 1 1-1h9"/>',
     chart: '<path d="M5 19.5V11M10 19.5V5M15 19.5v-6M20 19.5V8.5"/>',
     refresh: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v3.7h-3.7"/>',
-    tabs: '<rect x="3.5" y="5" width="17" height="13" rx="2.5"/><path d="M3.5 9h17M8 5v4"/>',
-    puzzle: '<path d="M9 4.5h3a1.5 1.5 0 0 1 3 0h3.5V9a1.5 1.5 0 0 1 0 3v6.5H14a1.5 1.5 0 0 0-3 0H5.5V14a1.5 1.5 0 0 0 0-3V4.5z"/>',
     list: '<path d="M9 7h11M9 12h11M9 17h11"/><circle cx="4.8" cy="7" r=".6"/><circle cx="4.8" cy="12" r=".6"/><circle cx="4.8" cy="17" r=".6"/>',
     heart: '<path d="M12 19.5s-7-4.3-7-9.5a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.2-7 9.5-7 9.5z"/>',
     calendar: '<rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/><path d="M8 14h2M12 14h4M8 17h4"/>',
@@ -106,26 +97,17 @@
   const VIEWS = {
     home: ["Quick tools", () => renderHome()],
     tasks: ["Notes & Goals", () => renderTasks()],
-    optimize: ["Optimize", () => renderOptimize()],
-    blocker: ["Site blocker", () => renderBlocker()],
     minimal: ["Minimal mode", () => renderMinimal()],
     quote: ["Daily quote", () => renderQuote()],
-    tabmanager: ["Tab manager", () => renderTabManager()],
-    extensions: ["Extensions", () => renderExtensions()],
     faq: ["FAQs", () => renderFaq()],
     changelog: ["Changelog", () => renderChangelog()],
     focus: ["Focus", () => window.AtlasFocus && AtlasFocus.render({ body: P.body, sub: P.sub, switchRow, section, show })],
     calendar: ["Calendar", () => window.AtlasCalendar && AtlasCalendar.render({ body: P.body, sub: P.sub, section, show, upgradeNote })],
     planner: ["Day planner", () => window.AtlasPlanner && AtlasPlanner.render({ body: P.body, sub: P.sub, section, show, upgradeNote })],
   };
-  /* views that are part of Atlas Pro: a free account gets the upgrade box
-     (pro.js) and stays on the home view */
-  const PRO_VIEWS = { blocker: "The site blocker is part of Atlas Pro. Block distracting sites, on a schedule or all the time." };
-  const proLocked = () => !!window.AtlasPro && !AtlasPro.isPro();
   /* the views drawn by other files, told when they stop being shown */
   const detachViews = () => [window.AtlasFocus, window.AtlasCalendar, window.AtlasPlanner].forEach((m) => m && m.detach());
   function show(v) {
-    if (PRO_VIEWS[v] && window.AtlasPro && AtlasPro.need(PRO_VIEWS[v])) v = "home";
     detachViews();
     view = VIEWS[v] ? v : "home";
     const [title, render] = VIEWS[view];
@@ -156,7 +138,6 @@
   /* the views below were written as panels of their own; these stand in */
   const viewPanel = (v) => ({ get hidden() { return P.panel.hidden || view !== v; }, contains: (n) => P.panel.contains(n) });
   const T = { body: P.body, sub: P.sub, panel: viewPanel("tasks") };
-  const O = { body: P.body, sub: P.sub, panel: viewPanel("optimize") };
 
   toolsBtn.addEventListener("click", () => (P.panel.hidden ? open("home") : closeAll()));
   P.back.addEventListener("click", () => show("home"));
@@ -203,7 +184,6 @@
   function renderHome() {
     const tasks = allTasks();
     const done = tasks.filter((t) => t.done).length;
-    const bl = AS.get().blocker;
     const q = AS.get().widgets.quote;
     P.sub.textContent = "Everything in one place";
     const tile = (icon, name, sub, onclick, cls) => h("button", { type: "button", class: "qt-tile" + (cls ? " " + cls : ""), onclick },
@@ -218,11 +198,7 @@
       window.AtlasCalendar ? tile(I.calendar, "Calendar", AtlasCalendar.tile(), () => show("calendar")) : null,
       window.AtlasStats ? tile(I.chart, "Stats", "Your time and progress", () => { closeAll(); AtlasStats.open(); }) : null,
       tile(I.tasks, "Notes & Goals", tasks.length ? done + " of " + tasks.length + " done" + (dueN ? " · " + dueN + " due" : "") : "Plan and track", () => show("tasks")),
-      hasTabs ? tile(I.bolt, "Optimize", AS.get().optimize.auto ? "Auto optimize on" : "Tidy your tabs", () => show("optimize")) : null,
-      tile(I.block, "Site blocker", proLocked() ? "🔒 Pro" : bl.on ? "On · " + bl.sites.length + " site" + (bl.sites.length === 1 ? "" : "s") : "Off", () => show("blocker"), bl.on && !proLocked() ? "is-on" : ""),
-      window.AtlasQuote ? tile(I.quote, "Daily quote", q.show ? (q.every === "day" ? "New one daily" : "New one each tab") : "Hidden", () => show("quote")) : null,
-      hasTabs ? tile(I.tabs, "Tab manager", sessions.length ? sessions.length + " saved session" + (sessions.length === 1 ? "" : "s") : "Save and reopen tabs", () => show("tabmanager")) : null,
-      hasChrome && chrome.permissions ? tile(I.puzzle, "Extensions", "Turn them on and off", () => show("extensions")) : null));
+      window.AtlasQuote ? tile(I.quote, "Daily quote", q.show ? (q.every === "day" ? "New one daily" : "New one each tab") : "Hidden", () => show("quote")) : null));
   }
 
   /* ================= NOTES & GOALS ===================================== */
@@ -746,390 +722,6 @@
     if (!habits.length) body.append(h("p", { class: "qt-empty", text: "Tick a habit off each day to build a streak. The squares under each one are the last " + HEAT_WEEKS + " weeks — click one to fill in a day you forgot." }));
   }
 
-  /* ================= OPTIMIZE ========================================== */
-  const selfUrl = hasChrome && chrome.runtime ? chrome.runtime.getURL("") : "";
-  const isWeb = (t) => /^https?:/.test(t.url || "");
-  /* two tabs are the same page when all but the #fragment matches */
-  const pageKey = (u) => { try { const x = new URL(u); x.hash = ""; return x.href; } catch { return u; } };
-  let lastClosed = [];
-  read(CLOSED_KEY, []).then((v) => { if (Array.isArray(v)) lastClosed = v; });
-
-  const allTabs = () => (hasTabs ? chrome.tabs.query({}) : Promise.resolve([]));
-
-  /* duplicates to close: in each group, keep the active one, else a pinned
-     one, else the most recently used */
-  function duplicates(tabs) {
-    const groups = new Map();
-    tabs.filter(isWeb).forEach((t) => {
-      const k = pageKey(t.url);
-      if (!groups.has(k)) groups.set(k, []);
-      groups.get(k).push(t);
-    });
-    const out = [];
-    groups.forEach((list) => {
-      if (list.length < 2) return;
-      list.sort((a, b) => (b.active - a.active) || (b.pinned - a.pinned) || ((b.lastAccessed || 0) - (a.lastAccessed || 0)));
-      out.push(...list.slice(1).filter((t) => !t.pinned));
-    });
-    return out;
-  }
-
-  async function closeTabs(tabs, label) {
-    if (!tabs.length) return 0;
-    lastClosed = tabs.map((t) => ({ url: t.url, pinned: !!t.pinned, windowId: t.windowId, index: t.index, title: t.title || t.url }));
-    await write(CLOSED_KEY, lastClosed);
-    await chrome.tabs.remove(tabs.map((t) => t.id));
-    flash(label.replace("{n}", tabs.length));
-    return tabs.length;
-  }
-  async function undoClose() {
-    const list = lastClosed;
-    lastClosed = [];
-    await write(CLOSED_KEY, []);
-    const wins = new Set((await chrome.windows.getAll().catch(() => [])).map((w) => w.id));
-    for (const t of list.sort((a, b) => a.index - b.index)) {
-      await chrome.tabs.create(Object.assign({ url: t.url, pinned: t.pinned, active: false },
-        wins.has(t.windowId) ? { windowId: t.windowId, index: t.index } : {})).catch(() => {});
-    }
-    flash("Reopened " + list.length + " tab" + (list.length === 1 ? "" : "s"));
-  }
-  /* asleep = discarded: stays in the strip, frees its memory */
-  const canSleep = (t) => isWeb(t) && !t.active && !t.discarded && !t.audible;
-  async function sleepTabs(tabs) {
-    let n = 0;
-    for (const t of tabs.filter(canSleep)) { if (await chrome.tabs.discard(t.id).catch(() => null)) n++; }
-    flash(n ? "Put " + n + " tab" + (n === 1 ? "" : "s") + " to sleep" : "Nothing to put to sleep");
-  }
-  async function wakeTabs(tabs) {
-    const asleep = tabs.filter((t) => t.discarded);
-    for (const t of asleep) await chrome.tabs.reload(t.id).catch(() => {});
-    flash(asleep.length ? "Woke " + asleep.length + " tab" + (asleep.length === 1 ? "" : "s") : "No sleeping tabs");
-  }
-
-  /* the last result ("Closed 3 tabs") outlives the redraw the change causes */
-  let flashEl = null;
-  let flashText = "";
-  let flashUntil = 0;
-  function paintFlash() {
-    if (!flashEl) return;
-    const on = Date.now() < flashUntil;
-    flashEl.textContent = on ? flashText : "";
-    flashEl.hidden = !on;
-  }
-  function flash(text) {
-    flashText = text;
-    flashUntil = Date.now() + 4000;
-    paintFlash();
-    clearTimeout(flash.t);
-    flash.t = setTimeout(paintFlash, 4050);
-  }
-
-  let optRaf = 0;
-  const refreshOpt = () => {
-    if (O.panel.hidden) return;
-    cancelAnimationFrame(optRaf);
-    optRaf = requestAnimationFrame(renderOptimize);
-  };
-  if (hasTabs) ["onCreated", "onRemoved", "onUpdated", "onReplaced"].forEach((ev) => chrome.tabs[ev] && chrome.tabs[ev].addListener(refreshOpt));
-
-  async function renderOptimize() {
-    const body = O.body;
-    if (!hasTabs) { body.textContent = ""; body.append(h("p", { class: "qt-empty", text: "Tab tools work inside Chrome." })); return; }
-    const tabs = await allTabs();
-    if (O.panel.hidden) return; // another tool opened meanwhile
-    const dups = duplicates(tabs);
-    const asleep = tabs.filter((t) => t.discarded);
-    const web = tabs.filter(isWeb);
-    O.sub.textContent = tabs.length + " tabs · " + dups.length + " duplicate" + (dups.length === 1 ? "" : "s") + " · " + asleep.length + " asleep";
-
-    const keep = body.scrollTop;
-    body.textContent = "";
-    flashEl = h("p", { class: "qt-flash", role: "status", hidden: true });
-    paintFlash();
-
-    const action = (icon, label, sub, onclick, disabled) => h("button", { type: "button", class: "qt-action", disabled, onclick },
-      h("span", { class: "qt-action-icon", html: svg(icon, 16) }),
-      h("span", { class: "qt-action-text" }, h("span", { text: label }), h("small", { text: sub })));
-
-    body.append(h("div", { class: "qt-actions" },
-      action(I.copy, "Close duplicates", dups.length ? dups.length + " to close" : "None open", () => closeTabs(dups, "Closed {n} duplicate tab(s)"), !dups.length),
-      action(I.moon, "Sleep tabs", "Free memory from inactive tabs", () => sleepTabs(tabs), !tabs.some(canSleep)),
-      action(I.sun, "Undo sleep", asleep.length ? "Wake " + asleep.length + " tab(s)" : "No sleeping tabs", () => wakeTabs(tabs), !asleep.length),
-      action(I.undo, "Undo close", lastClosed.length ? "Reopen " + lastClosed.length + " tab(s)" : "Nothing closed yet", () => undoClose().then(renderOptimize), !lastClosed.length)),
-    flashEl);
-
-    /* auto optimize (background.js) */
-    const o = AS.get().optimize;
-    const sw = (path, label) => {
-      const input = h("input", { type: "checkbox", class: "cz-switch", role: "switch", "aria-label": label });
-      input.checked = !!path.split(".").reduce((x, k) => x[k], AS.get());
-      input.addEventListener("change", () => { AS.set(path, input.checked); renderOptimize(); });
-      return h("label", { class: "qt-row" }, h("span", { text: label }), input);
-    };
-    const sleepSel = h("select", { class: "qt-select", "aria-label": "Sleep tabs unused for" },
-      [[15, "15 minutes"], [30, "30 minutes"], [60, "1 hour"], [120, "2 hours"], [240, "4 hours"]].map(([v, t]) => h("option", { value: v, text: t })));
-    sleepSel.value = String(o.sleepAfter);
-    sleepSel.addEventListener("change", () => AS.set("optimize.sleepAfter", Number(sleepSel.value)));
-    body.append(h("section", { class: "qt-auto" + (o.auto ? " is-on" : "") },
-      sw("optimize.auto", "Auto optimize"),
-      o.auto ? h("div", { class: "qt-auto-body" },
-        sw("optimize.sleep", "Sleep unused tabs"),
-        o.sleep ? h("label", { class: "qt-row" }, h("span", { text: "…after" }), sleepSel) : null,
-        sw("optimize.dedupe", "Close duplicates as they open"),
-        h("p", { class: "qt-empty", text: "Pinned tabs, playing tabs and the tab you're on are never touched." })) : null));
-
-    /* the open tabs, this window first */
-    const win = (await chrome.windows.getCurrent().catch(() => null)) || {};
-    if (O.panel.hidden) return;
-    const list = h("div", { class: "qt-tablist" });
-    const dupIds = new Set(dups.map((t) => t.id));
-    web.sort((a, b) => ((b.windowId === win.id) - (a.windowId === win.id)) || a.windowId - b.windowId || a.index - b.index)
-      .forEach((t) => {
-        let host = "";
-        try { host = new URL(t.url).hostname.replace(/^www\./, ""); } catch {}
-        const icon = t.favIconUrl && /^https?:|^data:/.test(t.favIconUrl) ? h("img", { class: "qt-fav", src: t.favIconUrl, alt: "" }) : h("span", { class: "qt-fav", text: (host[0] || "•").toUpperCase() });
-        list.append(h("div", { class: "qt-tabrow" + (t.discarded ? " is-asleep" : "") },
-          icon,
-          h("button", {
-            type: "button", class: "qt-tabname", title: t.title || t.url,
-            onclick: () => { chrome.tabs.update(t.id, { active: true }); chrome.windows.update(t.windowId, { focused: true }); },
-          }, h("span", { text: t.title || host }), h("small", { text: host + (t.discarded ? " · asleep" : "") + (dupIds.has(t.id) ? " · duplicate" : "") + (t.pinned ? " · pinned" : "") })),
-          canSleep(t) ? h("button", {
-            type: "button", class: "qt-icon", title: "Sleep", "aria-label": "Put " + (t.title || host) + " to sleep", html: svg(I.moon, 13),
-            onclick: () => sleepTabs([t]),
-          }) : t.discarded ? h("button", {
-            type: "button", class: "qt-icon", title: "Wake", "aria-label": "Wake " + (t.title || host), html: svg(I.sun, 13),
-            onclick: () => wakeTabs([t]),
-          }) : null,
-          h("button", {
-            type: "button", class: "qt-icon is-del", title: "Close tab", "aria-label": "Close " + (t.title || host), html: svg(I.close, 13),
-            onclick: () => closeTabs([t], "Closed {n} tab"),
-          })));
-      });
-    body.append(h("h4", { class: "qt-h", text: "Open tabs (" + web.length + ")" }), list);
-    if (selfUrl && tabs.length > web.length) body.append(h("p", { class: "qt-empty", text: "New tabs and Chrome's own pages aren't listed." }));
-    body.scrollTop = keep;
-  }
-
-
-  /* ================= TAB MANAGER ========================================
-     This window's open tabs, and saved sessions: a name plus its tabs,
-     opened again later in a new window or this one. "qt:sessions" =
-     { sessions: [{ id, name, at, tabs: [{ url, title, icon }] }] }. Free
-     accounts keep up to PRO_CONFIG.freeSessions; Pro, up to MAX_SESSIONS. */
-  const SESSIONS_KEY = "qt:sessions";
-  const MAX_SESSIONS = 50;
-  const MAX_SESSION_TABS = 100;
-  let sessions = [];
-  let sessionLayout = "list"; // list | grid
-  const sessionLimit = () => (window.AtlasAccount && AtlasAccount.isPro()
-    ? MAX_SESSIONS
-    : (typeof PRO_CONFIG !== "undefined" && PRO_CONFIG.freeSessions) || 3);
-
-  function normalizeSessions(d) {
-    const list = Array.isArray(d && d.sessions) ? d.sessions : [];
-    return list.filter((x) => x && x.id && Array.isArray(x.tabs)).slice(0, MAX_SESSIONS).map((x) => ({
-      id: String(x.id),
-      name: String(x.name || "").slice(0, 60) || "Session",
-      at: Number(x.at) || Date.now(),
-      tabs: x.tabs.filter((t) => t && /^https?:\/\//i.test(t.url)).slice(0, MAX_SESSION_TABS).map((t) => ({
-        url: String(t.url),
-        title: String(t.title || "").slice(0, 200),
-        icon: /^https:\/\//i.test(t.icon || "") ? String(t.icon) : "",
-      })),
-    }));
-  }
-  const sessionsReady = read(SESSIONS_KEY, null).then((d) => { sessions = normalizeSessions(d); });
-  const saveSessions = () => write(SESSIONS_KEY, { sessions });
-  if (hasChrome) chrome.storage.onChanged.addListener((ch, area) => {
-    if (area !== "local" || !ch[SESSIONS_KEY]) return;
-    sessions = normalizeSessions(ch[SESSIONS_KEY].newValue);
-    if (!P.panel.hidden && view === "tabmanager" && !P.panel.contains(document.activeElement)) show("tabmanager");
-  });
-
-  const hostName = (url) => { try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; } };
-  const favEl = (src, url) => (src && /^https?:|^data:/.test(src)
-    ? h("img", { class: "qt-fav", src, alt: "", onerror: (e) => e.target.replaceWith(h("span", { class: "qt-fav", text: (hostName(url)[0] || "•").toUpperCase() })) })
-    : h("span", { class: "qt-fav", text: (hostName(url)[0] || "•").toUpperCase() }));
-  const whenShort = (at) => new Date(at).toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
-
-  /* the async views check this after each wait: a newer render (a save
-     here, a change from another tab) takes over, rather than both drawing */
-  let renderSeq = 0;
-
-  async function renderTabManager() {
-    const body = P.body;
-    const my = ++renderSeq;
-    if (!hasTabs) { body.append(h("p", { class: "qt-empty", text: "The tab manager works inside Chrome." })); return; }
-    await sessionsReady;
-    const open = (await chrome.tabs.query({ currentWindow: true }).catch(() => [])).filter(isWeb);
-    if (P.panel.hidden || view !== "tabmanager" || my !== renderSeq) return; // another render took over
-    const limit = sessionLimit();
-    P.sub.textContent = open.length + " open tab" + (open.length === 1 ? "" : "s") + " · " + sessions.length + " saved";
-
-    /* save this window */
-    const name = h("input", { class: "qt-input", type: "text", maxlength: "60", placeholder: "Name this workspace…", "aria-label": "Session name" });
-    const msg = h("p", { class: "qt-note-err", hidden: true });
-    const full = sessions.length >= limit;
-    const saveForm = h("form", {
-      class: "qt-add-row",
-      onsubmit: async (e) => {
-        e.preventDefault();
-        if (!open.length) { msg.textContent = "No web pages are open in this window."; msg.hidden = false; return; }
-        if (sessions.length >= sessionLimit()) return;
-        sessions.unshift({
-          id: uid("s"),
-          name: name.value.trim().slice(0, 60) || "Tabs · " + new Date().toLocaleString([], { dateStyle: "medium", timeStyle: "short" }),
-          at: Date.now(),
-          tabs: open.slice(0, MAX_SESSION_TABS).map((t) => ({ url: t.url, title: t.title || "", icon: /^https:\/\//i.test(t.favIconUrl || "") ? t.favIconUrl : "" })),
-        });
-        await saveSessions();
-        show("tabmanager");
-      },
-    }, name, h("button", { type: "submit", class: "qt-btn is-primary", text: "Save", disabled: full || !open.length }));
-
-    const list = h("div", { class: "qt-tablist qt-tm-open" }, open.map((t) => h("div", { class: "qt-tabrow" },
-      favEl(t.favIconUrl, t.url),
-      h("button", {
-        type: "button", class: "qt-tabname", title: t.title || t.url,
-        onclick: () => { chrome.tabs.update(t.id, { active: true }); },
-      }, h("span", { text: t.title || hostName(t.url) }), h("small", { text: hostName(t.url) + (t.pinned ? " · pinned" : "") })),
-      h("button", {
-        type: "button", class: "qt-icon is-del", title: "Close tab", "aria-label": "Close " + (t.title || hostName(t.url)), html: svg(I.close, 13),
-        onclick: () => chrome.tabs.remove(t.id).then(() => show("tabmanager")),
-      }))));
-
-    body.append(section(open.length + " open tab" + (open.length === 1 ? "" : "s"),
-      saveForm, msg,
-      full ? upgradeNote("Free accounts keep " + limit + " saved sessions. Pro saves as many as you like.") : null,
-      open.length ? list : h("p", { class: "qt-empty", text: "No web pages are open in this window." })));
-
-    /* the saved ones */
-    const layoutBtn = (v, icon, label) => h("button", {
-      type: "button", class: "qt-icon" + (sessionLayout === v ? " is-on" : ""), title: label, "aria-label": label, "aria-pressed": String(sessionLayout === v), html: svg(icon, 13),
-      onclick: () => { sessionLayout = v; show("tabmanager"); },
-    });
-    const head = h("div", { class: "qt-tm-head" },
-      h("h4", { class: "qt-h", text: "Saved sessions (" + sessions.length + "/" + (limit >= MAX_SESSIONS ? "∞" : limit) + ")" }),
-      h("span", { class: "qt-tm-layout" }, layoutBtn("list", I.list, "List"), layoutBtn("grid", I.grid, "Grid")));
-
-    const restore = async (s, here) => {
-      const urls = s.tabs.map((t) => t.url);
-      if (!urls.length) return;
-      if (here) for (const url of urls) await chrome.tabs.create({ url, active: false });
-      else await chrome.windows.create({ url: urls, focused: true });
-    };
-    const del = async (s) => {
-      if (!confirm('Delete the session "' + s.name + '"?')) return;
-      sessions = sessions.filter((x) => x !== s);
-      await saveSessions();
-      show("tabmanager");
-    };
-    const actions = (s) => h("span", { class: "qt-tm-acts" },
-      h("button", { type: "button", class: "qt-btn is-primary", text: "Open", title: "Open in a new window", onclick: () => restore(s, false) }),
-      h("button", { type: "button", class: "qt-btn", text: "Add here", title: "Open in this window", onclick: () => restore(s, true) }),
-      h("button", { type: "button", class: "qt-icon is-del", title: "Delete", "aria-label": "Delete " + s.name, html: svg(I.trash, 13), onclick: () => del(s) }));
-    const favStack = (s) => h("span", { class: "qt-tm-favs" }, s.tabs.slice(0, 5).map((t) => favEl(t.icon, t.url)),
-      s.tabs.length > 5 ? h("span", { class: "qt-tm-more", text: "+" + (s.tabs.length - 5) }) : null);
-    const meta = (s) => s.tabs.length + " tab" + (s.tabs.length === 1 ? "" : "s") + " · " + whenShort(s.at);
-
-    const saved = !sessions.length
-      ? h("p", { class: "qt-empty", text: "No saved sessions yet. Name this window's tabs above and press Save." })
-      : sessionLayout === "grid"
-        ? h("div", { class: "qt-tm-grid" }, sessions.map((s) => h("div", { class: "qt-tm-card" },
-          h("strong", { text: s.name, title: s.name }), h("small", { text: meta(s) }), favStack(s), actions(s))))
-        : h("div", { class: "qt-tm-list" }, sessions.map((s) => h("div", { class: "qt-tm-row" },
-          h("div", { class: "qt-tm-top" }, h("strong", { text: s.name, title: s.name }), h("small", { text: meta(s) })),
-          h("div", { class: "qt-tm-bottom" }, favStack(s), actions(s)))));
-    body.append(h("section", { class: "qt-section" }, head, saved));
-  }
-
-  /* ================= EXTENSIONS =========================================
-     The other installed extensions, switched on and off from here. Chrome's
-     "management" permission is optional: asked for the first time this
-     view is used, so installing Atlas never needs it. */
-  let extQuery = "";
-  let extFilter = "all"; // all | on | off
-  const canManage = () => new Promise((r) => (chrome.permissions ? chrome.permissions.contains({ permissions: ["management"] }, r) : r(false)));
-
-  async function renderExtensions() {
-    const body = P.body;
-    const my = ++renderSeq;
-    if (!hasChrome || !chrome.permissions) { body.append(h("p", { class: "qt-empty", text: "Extension tools work inside Chrome." })); return; }
-    if (!(await canManage()) || !chrome.management) {
-      if (P.panel.hidden || view !== "extensions" || my !== renderSeq) return;
-      P.sub.textContent = "Needs your permission";
-      body.append(section("Manage extensions",
-        h("p", { class: "qt-empty", text: "Turn your other extensions on and off from here. Chrome asks once to let Atlas see and switch them — nothing leaves this computer." }),
-        h("button", {
-          type: "button", class: "qt-btn is-primary", text: "Allow",
-          /* straight from the click: Chrome only asks inside a user gesture */
-          onclick: () => chrome.permissions.request({ permissions: ["management"] }, (ok) => { if (ok) show("extensions"); }),
-        })));
-      return;
-    }
-    const all = (await chrome.management.getAll().catch(() => []))
-      .filter((x) => x.id !== chrome.runtime.id && (x.type === "extension" || x.type === "theme"))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    if (P.panel.hidden || view !== "extensions" || my !== renderSeq) return;
-    const onN = all.filter((x) => x.enabled).length;
-    P.sub.textContent = all.length + " installed · " + onN + " on";
-
-    const search = h("input", { class: "qt-input", type: "search", value: extQuery, placeholder: "Search extensions…", "aria-label": "Search extensions" });
-    const chips = h("div", { class: "qt-chips", role: "radiogroup", "aria-label": "Show" });
-    const list = h("div", { class: "qt-tablist qt-ext-list" });
-    const paintChips = () => {
-      chips.textContent = "";
-      [["all", "All", all.length], ["on", "Active", onN], ["off", "Off", all.length - onN]].forEach(([v, t, n]) => chips.append(h("button", {
-        type: "button", role: "radio", class: "qt-chip" + (extFilter === v ? " is-on" : ""), "aria-checked": String(extFilter === v), text: t + " · " + n,
-        onclick: () => { extFilter = v; paintChips(); paintList(); },
-      })));
-    };
-    const iconOf = (x) => {
-      const best = (x.icons || []).slice().sort((a, b) => b.size - a.size)[0];
-      const letter = () => h("span", { class: "qt-fav qt-ext-icon", text: (x.name[0] || "•").toUpperCase() });
-      return best ? h("img", { class: "qt-fav qt-ext-icon", src: best.url, alt: "", onerror: (e) => e.target.replaceWith(letter()) }) : letter();
-    };
-    function paintList() {
-      const q = extQuery.trim().toLowerCase();
-      const shown = all.filter((x) => (extFilter === "all" || (extFilter === "on") === x.enabled) &&
-        (!q || x.name.toLowerCase().includes(q) || (x.description || "").toLowerCase().includes(q)));
-      list.textContent = "";
-      if (!shown.length) list.append(h("p", { class: "qt-empty", text: all.length ? "Nothing matches." : "No other extensions installed." }));
-      shown.forEach((x) => {
-        const sw = h("input", {
-          type: "checkbox", class: "cz-switch", role: "switch", "aria-label": (x.enabled ? "Turn off " : "Turn on ") + x.name,
-          disabled: !x.mayDisable, title: x.mayDisable ? "" : "Installed by your organisation",
-        });
-        sw.checked = x.enabled;
-        sw.addEventListener("change", () => {
-          const want = sw.checked;
-          chrome.management.setEnabled(x.id, want).then(() => {
-            x.enabled = want;
-            row.classList.toggle("is-off", !want);
-            sw.setAttribute("aria-label", (want ? "Turn off " : "Turn on ") + x.name);
-            P.sub.textContent = all.length + " installed · " + all.filter((e) => e.enabled).length + " on";
-            paintChips();
-            if (extFilter !== "all") paintList();
-          }, () => { sw.checked = !want; });
-        });
-        const row = h("div", { class: "qt-tabrow qt-ext-row" + (x.enabled ? "" : " is-off") },
-          iconOf(x),
-          h("button", {
-            type: "button", class: "qt-tabname", title: "Details in Chrome",
-            onclick: () => chrome.tabs.create({ url: "chrome://extensions/?id=" + x.id }),
-          }, h("span", { text: x.name }), h("small", { text: (x.type === "theme" ? "Theme" : "v" + x.version) + (x.enabled ? "" : " · off") })),
-          sw);
-        list.append(row);
-      });
-    }
-    search.addEventListener("input", () => { extQuery = search.value; paintList(); });
-    paintChips();
-    paintList();
-    body.append(h("div", { class: "qt-section" }, search, chips), list,
-      h("button", { type: "button", class: "qt-chip qt-ext-all", text: "Open Chrome's extensions page", onclick: () => chrome.tabs.create({ url: "chrome://extensions/" }) }));
-  }
-
   /* ================= ABOUT: the footer, FAQs and changelog ==============
      The footer is shown at the bottom of Customize (customize.js asks for
      it); FAQs and Changelog still open here, in Quick tools. */
@@ -1143,6 +735,8 @@
     const api = typeof ACCOUNT_CONFIG !== "undefined" && ACCOUNT_CONFIG.api ? String(ACCOUNT_CONFIG.api).replace(/\/+$/, "") : "";
     return api ? api + "/privacy.html" : "";
   };
+  /* a page of the marketing site, or "" when there is no site */
+  const siteUrl = (path) => (ABOUT.siteUrl ? String(ABOUT.siteUrl).replace(/\/+$/, "") + (path || "") : "");
   const openUrl = (url) => (hasTabs ? chrome.tabs.create({ url }) : window.open(url, "_blank", "noopener"));
 
   /* `leave` runs before FAQs / Changelog open here (Customize closes) */
@@ -1183,7 +777,10 @@
       h("nav", { class: "qt-foot-links", "aria-label": "About" },
         link("FAQs", () => go("faq")),
         link("Changelog", () => go("changelog")),
+        siteUrl() ? link("Website", () => openUrl(siteUrl())) : null,
         privacyUrl() ? link("Privacy", () => openUrl(privacyUrl())) : null,
+        siteUrl() ? link("Terms", () => openUrl(siteUrl("/terms"))) : null,
+        siteUrl() ? link("Refunds", () => openUrl(siteUrl("/refunds"))) : null,
         AS.exportSettings ? link("Export backup", () => {
           if (window.AtlasPro && AtlasPro.need("Backup is part of Atlas Pro.")) return;
           AS.exportSettings();
@@ -1200,10 +797,9 @@
     ["How do I change the wallpaper?", "Click the wallpaper button, or right-click the page → Customize → Background. The Schedule there changes it by itself at set times."],
     ["Where are my notes kept?", "On this computer. Sign in (Customize → Account) and they're kept in step across your computers too. Private notes live in the private folder, encrypted."],
     ["I forgot my private folder password.", "It can't be recovered — the contents are encrypted with it. Customize → Privacy lets you delete the folder and start again."],
-    ["Why doesn't the site blocker block a site?", "Check that “Block these sites” is on, and, with “Only at certain times”, that it's inside those times. A running break lifts it for 5 minutes."],
     ["The assistant won't hear me.", "Allow the microphone for Atlas when Chrome asks. If it was blocked, the assistant offers an “Allow microphone” button."],
     ["How do I back up everything?", "With Atlas Pro: Export Backup (below) saves your settings to a file; Customize → Backup imports it again."],
-    ["What does Pro add?", "Every theme and cursor, unlimited online and live 4K wallpapers (free accounts get 5), the private space, backup, more habits and saved sessions, 30 days of stats with a weekly email, sync, the AI day planner and calendar."],
+    ["What does Pro add?", "Every theme and cursor, unlimited online and live 4K wallpapers (free accounts get 5), the private space, backup, more habits, 30 days of stats with a weekly email, sync, the AI day planner and calendar."],
     ["Is there a free trial?", "Yes — sign in with Google and a new account gets every Pro feature free for 7 days. After that, subscribe in Customize → Account to keep them."],
   ].filter(([q]) => !(window.AtlasAccount && AtlasAccount.allFree && /Pro/.test(q))); // no plans to explain while all is free
   function renderFaq() {
@@ -1214,16 +810,18 @@
 
   /* newest first: [version, date, changes] */
   const CHANGELOG = [
-    [manifest.version, "Sep 2026", [
-      "Tab manager: save a window's tabs as a named session and open it again",
-      "Extensions: turn your other extensions on and off",
+    [manifest.version, "Oct 2026", [
+      "Search now uses your browser's own search engine",
+      "Atlas now works only on the new tab page: website tools (cursor and translation on other sites, site blocker, tab tools) are gone",
+    ]],
+    ["1.0.1", "Sep 2026", [
       "A private folder, like a phone's hidden one, with its own shortcuts and notes",
       "Notes in Customize, and your own quotes straight from the new tab",
       "Smoother panel transitions; the wallpaper schedule switches on the minute",
     ]],
     ["1.0.0", "Aug 2026", [
       "Live wallpapers, shortcut workspaces, search and the assistant",
-      "Focus timer, reminders, habits, stats and the site blocker",
+      "Focus timer, reminders, habits and stats",
     ]],
   ];
   function renderChangelog() {
@@ -1233,74 +831,12 @@
       h("ul", {}, items.map((t) => h("li", { text: t })))))));
   }
 
-  /* ================= SITE BLOCKER ====================================== */
-  const BLOCK_PACKS = [
-    ["Social", ["facebook.com", "instagram.com", "x.com", "twitter.com", "tiktok.com", "reddit.com", "snapchat.com"]],
-    ["Video", ["youtube.com", "netflix.com", "twitch.tv", "primevideo.com"]],
-    ["News", ["cnn.com", "bbc.com", "news.google.com", "nytimes.com"]],
-    ["Shopping", ["amazon.com", "daraz.pk", "aliexpress.com", "ebay.com"]],
-  ];
   const clean = AS.clean || {};
-
-  function renderBlocker() {
-    const b = AS.get().blocker;
-    const setSites = (list) => {
-      const grew = list.length > b.sites.length;
-      AS.set("blocker.sites", clean.sites ? clean.sites(list) : list);
-      /* adding a site means "block it": switch the blocker on if it was off */
-      if (grew && !AS.get().blocker.on) AS.set("blocker.on", true);
-      show("blocker");
-    };
-    P.sub.textContent = b.on ? (b.schedule ? "On at set times" : "Blocking now") + " · " + b.sites.length + " site" + (b.sites.length === 1 ? "" : "s") : "Off";
-
-    const msg = h("p", { class: "qt-note-err", hidden: true });
-    const input = h("input", { class: "qt-input", type: "text", placeholder: "youtube.com", spellcheck: "false", "aria-label": "Site to block" });
-    const add = h("form", {
-      class: "qt-add-row",
-      onsubmit: (e) => {
-        e.preventDefault();
-        const found = input.value.split(/[\s,]+/).filter(Boolean).map((v) => (clean.site ? clean.site(v) : v)).filter(Boolean);
-        if (!found.length) { msg.textContent = "That isn't a web address. Try something like youtube.com"; msg.hidden = false; return; }
-        setSites(b.sites.concat(found));
-        const again = P.body.querySelector(".qt-add-row .qt-input");
-        if (again) again.focus();
-      },
-    }, input, h("button", { type: "submit", class: "qt-btn is-primary", text: "Block" }));
-
-    const chips = h("div", { class: "qt-chips" }, b.sites.map((d) => h("span", { class: "qt-site", translate: "no" }, d,
-      h("button", { type: "button", "aria-label": "Unblock " + d, title: "Unblock", text: "✕", onclick: () => setSites(b.sites.filter((x) => x !== d)) }))));
-    const packs = h("div", { class: "qt-chips" }, BLOCK_PACKS.map(([name, list]) => {
-      const all = list.every((d) => b.sites.includes(d));
-      return h("button", {
-        type: "button", class: "qt-chip" + (all ? " is-on" : ""), text: (all ? "✓ " : "+ ") + name, title: list.join(", "),
-        onclick: () => setSites(all ? b.sites.filter((d) => !list.includes(d)) : b.sites.concat(list)),
-      });
-    }));
-
-    const when = b.schedule ? h("div", { class: "qt-sub" },
-      dayPicker(b.days, (days) => { AS.set("blocker.days", days); show("blocker"); }),
-      h("div", { class: "qt-due-row" },
-        h("span", { class: "qt-label", text: "From" }), timeInput(b.from, "From", (v) => AS.set("blocker.from", v)),
-        h("span", { class: "qt-label", text: "to" }), timeInput(b.to, "To", (v) => AS.set("blocker.to", v))),
-      h("p", { class: "qt-empty", text: "A time like 22:00 to 06:00 runs overnight." })) : null;
-
-    const message = h("input", {
-      class: "qt-input", type: "text", value: b.message, maxlength: "200", placeholder: "Stay focused — it'll still be there later.", "aria-label": "Message on the blocked page",
-      onchange: (e) => AS.set("blocker.message", e.target.value.trim().slice(0, 200)),
-    });
-
-    P.body.append(
-      h("section", { class: "qt-auto" + (b.on ? " is-on" : "") }, switchRow("Block these sites", "blocker.on", () => show("blocker")),
-        h("p", { class: "qt-empty", text: "Blocked sites open a calm “This site is blocked” page instead, in every tab." })),
-      section("Sites", add, msg, b.sites.length ? chips : h("p", { class: "qt-empty", text: "No sites yet. Add one, or a whole group:" }), packs),
-      section("When", switchRow("Only at certain times", "blocker.schedule", () => show("blocker")), when),
-      section("Blocked page", switchRow("Allow 5-minute breaks", "blocker.breaks"), message));
-  }
 
   /* ================= MINIMAL MODE ====================================== */
   const MIN_KEEP = [
     ["clock", "Clock"], ["weather", "Weather"], ["search", "Search bar"], ["dock", "Shortcuts dock"],
-    ["media", "Now playing"], ["wallpaper", "Zen clock button"], ["peek", "Quick Peek"], ["ai", "Quick tools & chat"], ["quote", "Daily quote"],
+    ["wallpaper", "Zen clock button"], ["peek", "Quick Peek"], ["ai", "Quick tools & chat"], ["quote", "Daily quote"],
   ];
   const MIN_PRESETS = [
     ["Work hours", [1, 2, 3, 4, 5], "09:00", "17:00"], ["Evenings", [0, 1, 2, 3, 4, 5, 6], "20:00", "23:59"],
@@ -1463,8 +999,5 @@
       },
       on: (fn) => notesListeners.push(fn),
     },
-    openOptimize: () => open("optimize"),
-    closeDuplicates: async () => closeTabs(duplicates(await allTabs()), "Closed {n} duplicate tab(s)"),
-    sleepTabs: async () => sleepTabs(await allTabs()),
   };
 })();

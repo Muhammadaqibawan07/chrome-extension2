@@ -14,12 +14,12 @@
   const put = (k, v) => (hasChrome ? chrome.storage.local.set({ [k]: v }) : localStorage.setItem(k, v));
 
   const STEPS = [
-    { el: "#q", pad: 10, title: "Search from here", text: "Type and press Enter. The icon on the left switches the search engine, and the clock icon shows your recent searches." },
+    { el: "#q", pad: 10, title: "Search from here", text: "Type and press Enter to search with your browser's search engine. The icon on the left searches a single site (YouTube, GitHub...), and the clock icon shows your recent searches." },
     { el: "#rail", title: "Your workspaces", text: "Keep separate shortcut sets, like Personal and Work, and switch between them with one click." },
     { el: "#launcher", title: "Shortcuts", text: "Your favourite sites in tidy cards. Drag to reorder, right-click to edit or remove, and use the tabs to move between sections." },
     { el: '.rail-btn[aria-label="Customize appearance"]', title: "Make it yours", text: "Themes, wallpapers (including live 4K video), cursors, fonts and your account all live in Customize." },
     { el: '.rail-btn[aria-label="Open Command Center"]', title: "Command Center", text: "Press Ctrl + Space anywhere on the page to jump to any setting, tool or shortcut in a couple of keystrokes." },
-    { el: ".qt-bubble", title: "Quick tools", text: "Notes, habits, reminders, focus timer, tab manager and more, one click away." },
+    { el: ".qt-bubble", title: "Quick tools", text: "Notes, habits, reminders, focus timer and more, one click away." },
     { el: "#aiToggle", title: "Ask Atlas", text: "Your built-in assistant. Ask questions, plan your day or draft something quickly." },
     { el: "#weather", title: "Weather", text: "Click it to set your city if your location isn't detected." },
     { el: "#wpControl", title: "Zen and minimal", text: "Z shows a calm full-screen clock, M hides everything but the essentials. That's the tour. Enjoy Atlas!" },
