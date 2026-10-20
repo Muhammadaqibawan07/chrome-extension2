@@ -101,8 +101,10 @@ export function Nav() {
           <a href="/#features">Features</a>
           <a href="/#themes">Themes</a>
           <a href="/#pricing">Pricing</a>
-          <a href="/#faq">FAQ</a>
+          <a href="/#reviews">Reviews</a>
           <a href="/#team">Team</a>
+          <a href="/#faq">FAQ</a>
+          <a href="/#contact">Contact</a>
         </nav>
         <InstallButton className="btn-sm">{STORE_URL ? "Add to Chrome" : "Download"}</InstallButton>
       </div>
@@ -136,6 +138,7 @@ export function Footer() {
           </div>
           <div>
             <h4>Contact</h4>
+            <a href="/#contact">Contact form</a>
             <a href={"mailto:" + CONTACT_EMAIL}>Email us</a>
           </div>
         </div>

@@ -9,9 +9,11 @@ export const API_URL = String(
   import.meta.env.VITE_API_URL || "https://atlas-assistant-backend.vercel.app",
 ).replace(/\/+$/, "");
 
-/* the Chrome Web Store page; empty until it's published, then the
-   "Add to Chrome" buttons use it instead of the zip download */
-export const STORE_URL = String(import.meta.env.VITE_STORE_URL || "");
+/* the Chrome Web Store page; the "Add to Chrome" buttons open it instead
+   of the zip download. Override with VITE_STORE_URL. */
+export const STORE_URL = String(
+  import.meta.env.VITE_STORE_URL || "https://chromewebstore.google.com/detail/atlas-new-tab/ldhbhbfjagkhiiofgcflkiohipeioana",
+);
 export const DOWNLOAD_URL = "/atlas-new-tab.zip";
 export const CONTACT_EMAIL = "muhammadaqibawan07@gmail.com";
 
