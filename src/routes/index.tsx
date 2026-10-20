@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { AnimeLovers } from "@/components/site/anime";
 import { Contact, Reviews } from "@/components/site/connect";
@@ -810,6 +810,11 @@ function Faq() {
           </h2>
           <p className="lede">
             Something else? <a href="#contact">Write to us</a> or <a href={"mailto:" + CONTACT_EMAIL}>email</a> and a real person answers.
+          </p>
+          <p className="lede">
+            Still comparing? Read our guides to <Link to="/guides/best-chrome-new-tab-extensions">choosing a new tab extension</Link>,{" "}
+            <Link to="/guides/best-chrome-wallpaper-extensions">wallpaper extensions</Link> and{" "}
+            <Link to="/features/live-wallpapers">how live wallpapers work</Link>.
           </p>
         </Reveal>
         <div className="faq">
