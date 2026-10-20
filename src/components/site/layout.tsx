@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
+import { GUIDES } from "@/lib/guides";
 import { CONTACT_EMAIL, DOWNLOAD_URL, STORE_URL, THEMES, type Theme } from "@/lib/site";
 
 /* ---------- theme: the site wears whichever preset you pick ---------- */
@@ -129,6 +130,14 @@ export function Footer() {
             <a href="/#features">Features</a>
             <a href="/#pricing">Pricing</a>
             <a href="/#faq">FAQ</a>
+          </div>
+          <div>
+            <h4>Guides</h4>
+            {GUIDES.map((g) => (
+              <Link key={g.path} to={g.path}>
+                {g.name}
+              </Link>
+            ))}
           </div>
           <div>
             <h4>Legal</h4>

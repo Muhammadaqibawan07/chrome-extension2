@@ -15,6 +15,9 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RefundsRouteImport } from './routes/refunds'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ApiVideoRouteImport } from './routes/api.video'
+import { Route as FeaturesLiveWallpapersRouteImport } from './routes/features/live-wallpapers'
+import { Route as GuidesBestChromeNewTabExtensionsRouteImport } from './routes/guides/best-chrome-new-tab-extensions'
+import { Route as GuidesBestChromeWallpaperExtensionsRouteImport } from './routes/guides/best-chrome-wallpaper-extensions'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +49,23 @@ const ApiVideoRoute = ApiVideoRouteImport.update({
   path: '/api/video',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FeaturesLiveWallpapersRoute = FeaturesLiveWallpapersRouteImport.update({
+  id: '/features/live-wallpapers',
+  path: '/features/live-wallpapers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuidesBestChromeNewTabExtensionsRoute =
+  GuidesBestChromeNewTabExtensionsRouteImport.update({
+    id: '/guides/best-chrome-new-tab-extensions',
+    path: '/guides/best-chrome-new-tab-extensions',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const GuidesBestChromeWallpaperExtensionsRoute =
+  GuidesBestChromeWallpaperExtensionsRouteImport.update({
+    id: '/guides/best-chrome-wallpaper-extensions',
+    path: '/guides/best-chrome-wallpaper-extensions',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +74,9 @@ export interface FileRoutesByFullPath {
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
   '/api/video': typeof ApiVideoRoute
+  '/features/live-wallpapers': typeof FeaturesLiveWallpapersRoute
+  '/guides/best-chrome-new-tab-extensions': typeof GuidesBestChromeNewTabExtensionsRoute
+  '/guides/best-chrome-wallpaper-extensions': typeof GuidesBestChromeWallpaperExtensionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +85,9 @@ export interface FileRoutesByTo {
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
   '/api/video': typeof ApiVideoRoute
+  '/features/live-wallpapers': typeof FeaturesLiveWallpapersRoute
+  '/guides/best-chrome-new-tab-extensions': typeof GuidesBestChromeNewTabExtensionsRoute
+  '/guides/best-chrome-wallpaper-extensions': typeof GuidesBestChromeWallpaperExtensionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,13 +97,33 @@ export interface FileRoutesById {
   '/refunds': typeof RefundsRoute
   '/terms': typeof TermsRoute
   '/api/video': typeof ApiVideoRoute
+  '/features/live-wallpapers': typeof FeaturesLiveWallpapersRoute
+  '/guides/best-chrome-new-tab-extensions': typeof GuidesBestChromeNewTabExtensionsRoute
+  '/guides/best-chrome-wallpaper-extensions': typeof GuidesBestChromeWallpaperExtensionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/checkout' | '/privacy' | '/refunds' | '/terms' | '/api/video'
+    | '/'
+    | '/checkout'
+    | '/privacy'
+    | '/refunds'
+    | '/terms'
+    | '/api/video'
+    | '/features/live-wallpapers'
+    | '/guides/best-chrome-new-tab-extensions'
+    | '/guides/best-chrome-wallpaper-extensions'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/checkout' | '/privacy' | '/refunds' | '/terms' | '/api/video'
+  to:
+    | '/'
+    | '/checkout'
+    | '/privacy'
+    | '/refunds'
+    | '/terms'
+    | '/api/video'
+    | '/features/live-wallpapers'
+    | '/guides/best-chrome-new-tab-extensions'
+    | '/guides/best-chrome-wallpaper-extensions'
   id:
     | '__root__'
     | '/'
@@ -86,6 +132,9 @@ export interface FileRouteTypes {
     | '/refunds'
     | '/terms'
     | '/api/video'
+    | '/features/live-wallpapers'
+    | '/guides/best-chrome-new-tab-extensions'
+    | '/guides/best-chrome-wallpaper-extensions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -95,6 +144,9 @@ export interface RootRouteChildren {
   RefundsRoute: typeof RefundsRoute
   TermsRoute: typeof TermsRoute
   ApiVideoRoute: typeof ApiVideoRoute
+  FeaturesLiveWallpapersRoute: typeof FeaturesLiveWallpapersRoute
+  GuidesBestChromeNewTabExtensionsRoute: typeof GuidesBestChromeNewTabExtensionsRoute
+  GuidesBestChromeWallpaperExtensionsRoute: typeof GuidesBestChromeWallpaperExtensionsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -141,6 +193,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVideoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/features/live-wallpapers': {
+      id: '/features/live-wallpapers'
+      path: '/features/live-wallpapers'
+      fullPath: '/features/live-wallpapers'
+      preLoaderRoute: typeof FeaturesLiveWallpapersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guides/best-chrome-new-tab-extensions': {
+      id: '/guides/best-chrome-new-tab-extensions'
+      path: '/guides/best-chrome-new-tab-extensions'
+      fullPath: '/guides/best-chrome-new-tab-extensions'
+      preLoaderRoute: typeof GuidesBestChromeNewTabExtensionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guides/best-chrome-wallpaper-extensions': {
+      id: '/guides/best-chrome-wallpaper-extensions'
+      path: '/guides/best-chrome-wallpaper-extensions'
+      fullPath: '/guides/best-chrome-wallpaper-extensions'
+      preLoaderRoute: typeof GuidesBestChromeWallpaperExtensionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -151,6 +224,10 @@ const rootRouteChildren: RootRouteChildren = {
   RefundsRoute: RefundsRoute,
   TermsRoute: TermsRoute,
   ApiVideoRoute: ApiVideoRoute,
+  FeaturesLiveWallpapersRoute: FeaturesLiveWallpapersRoute,
+  GuidesBestChromeNewTabExtensionsRoute: GuidesBestChromeNewTabExtensionsRoute,
+  GuidesBestChromeWallpaperExtensionsRoute:
+    GuidesBestChromeWallpaperExtensionsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
