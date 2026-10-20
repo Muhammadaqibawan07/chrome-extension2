@@ -7,6 +7,7 @@ import { errorHandler, notFound } from "./middleware/error.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { aiRouter } from "./routes/ai.routes.js";
 import { billingRouter, webhookRouter } from "./routes/billing.routes.js";
+import { contactRouter } from "./routes/contact.routes.js";
 import { settingsRouter } from "./routes/settings.routes.js";
 import { statsRouter } from "./routes/stats.routes.js";
 import { syncRouter } from "./routes/sync.routes.js";
@@ -41,6 +42,7 @@ app.get("/config", (req, res) => {
 app.use(authRouter);
 app.use(aiRouter);
 app.use(billingRouter);
+app.use(contactRouter);
 app.use(settingsRouter);
 app.use(statsRouter);
 app.use(syncRouter);

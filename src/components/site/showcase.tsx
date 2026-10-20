@@ -24,6 +24,22 @@ export function useCycle(length: number, ms: number) {
   return i;
 }
 
+/* like useCycle, but a click picks one and stops the cycling */
+export function usePick(length: number, ms: number) {
+  const [i, setI] = useState(0);
+  const [held, setHeld] = useState(false);
+  useEffect(() => {
+    if (held || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setInterval(() => setI((x) => (x + 1) % length), ms);
+    return () => clearInterval(t);
+  }, [length, ms, held]);
+  const pick = (k: number) => {
+    setHeld(true);
+    setI(k);
+  };
+  return [i, pick] as const;
+}
+
 /* types each phrase out, holds it, deletes it, moves on */
 export function useTyped(phrases: string[], hold = 1600) {
   const [text, setText] = useState(phrases[0]);
@@ -201,6 +217,7 @@ export function NewTabMock({ wall = "meadow" }: { wall?: string }) {
   const tab = useCycle(3, 3200);
   const ref = useRef<HTMLDivElement>(null);
   const vref = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(true);
 
   useEffect(() => {
     const v = vref.current;
@@ -286,7 +303,7 @@ export function NewTabMock({ wall = "meadow" }: { wall?: string }) {
       </div>
 
       {/* floating widgets around the frame */}
-      <div className="float f-play glass-solid">
+      <div className={"float f-play glass-solid" + (playing ? "" : " is-paused")}>
         <span className="art" />
         <span className="f-col">
           <b>Midnight City</b>
@@ -295,7 +312,9 @@ export function NewTabMock({ wall = "meadow" }: { wall?: string }) {
             <i />
           </span>
         </span>
-        <Icon d={I.pause} size={14} />
+        <button type="button" className="tap" onClick={() => setPlaying((p) => !p)} aria-label={playing ? "Pause" : "Play"}>
+          <Icon d={playing ? I.pause : I.play} size={14} />
+        </button>
       </div>
       <div className="float f-focus glass-solid">
         <span className="ring-mini" />
@@ -342,6 +361,9 @@ export function CommandMock() {
       ["Zen settings", "World clocks", I.globe],
     ],
   ];
+  /* the row you clicked, for the word it was clicked under */
+  const [sel, setSel] = useState<[number, number]>([0, 0]);
+  const on = sel[0] === idx ? sel[1] : 0;
   return (
     <div className="cmd glass-solid">
       <div className="cmd-in">
@@ -357,7 +379,7 @@ export function CommandMock() {
       </div>
       <ul key={idx}>
         {sets[idx].map(([t, s, d], i) => (
-          <li key={t} className={i === 0 ? "on" : ""} style={{ animationDelay: i * 60 + "ms" }}>
+          <li key={t} className={i === on ? "on" : ""} style={{ animationDelay: i * 60 + "ms" }} onClick={() => setSel([idx, i])}>
             <span className="cmd-ico">
               <Icon d={d} size={15} />
             </span>
@@ -365,7 +387,7 @@ export function CommandMock() {
               <b>{t}</b>
               <small>{s}</small>
             </span>
-            {i === 0 && <kbd>↵</kbd>}
+            {i === on && <kbd>↵</kbd>}
           </li>
         ))}
       </ul>
@@ -380,7 +402,7 @@ const ENGINES = [
   ["wikipedia", "Wikipedia", "!w", "Tokyo"],
 ];
 export function SearchMock() {
-  const i = useCycle(ENGINES.length, 2400);
+  const [i, pick] = usePick(ENGINES.length, 2400);
   const [n, label, bang, q] = ENGINES[i];
   return (
     <div className="srch">
@@ -397,10 +419,10 @@ export function SearchMock() {
       </div>
       <div className="srch-chips">
         {ENGINES.map(([e, l], k) => (
-          <span key={e} className={k === i ? "on" : ""}>
+          <button type="button" key={e} className={k === i ? "on" : ""} aria-pressed={k === i} onClick={() => pick(k)}>
             <img src={`/media/apps/${e}.svg`} alt="" />
             {l}
-          </span>
+          </button>
         ))}
         <span>+ ChatGPT, Amazon, Bing, DuckDuckGo, Brave, your own</span>
       </div>
@@ -411,13 +433,15 @@ export function SearchMock() {
 
 export function FocusMock() {
   const [left, setLeft] = useState(25 * 60 - 48);
+  const [running, setRunning] = useState(true);
   useEffect(() => {
+    if (!running) return;
     const t = setInterval(() => setLeft((s) => (s <= 0 ? 25 * 60 : s - 1)), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [running]);
   const pct = left / (25 * 60);
   return (
-    <div className="focus">
+    <div className={"focus" + (running ? "" : " is-paused")}>
       <svg viewBox="0 0 120 120" className="focus-ring" aria-hidden="true">
         <circle cx="60" cy="60" r="52" className="track" />
         <circle cx="60" cy="60" r="52" className="bar" style={{ strokeDashoffset: 326.7 * (1 - pct) }} />
@@ -426,42 +450,74 @@ export function FocusMock() {
         <b>
           {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}
         </b>
-        <small>Focus · 2 of 4</small>
+        <small>{running ? "Focus · 2 of 4" : "Paused"}</small>
       </div>
       <div className="focus-chips">
-        <span>
-          <Icon d={I.pause} size={12} /> Pause
-        </span>
-        <span>Break in {Math.ceil(left / 60)} min</span>
+        <button type="button" className="on" aria-pressed={!running} onClick={() => setRunning((r) => !r)}>
+          <Icon d={running ? I.pause : I.play} size={12} /> {running ? "Pause" : "Resume"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setRunning(false);
+            setLeft(25 * 60);
+          }}
+        >
+          Reset
+        </button>
+        <span>{running ? `Break in ${Math.ceil(left / 60)} min` : "Timer stopped"}</span>
       </div>
     </div>
   );
 }
 
+const REMINDERS = [
+  ["Mum's birthday", "Every year · 9:00", "Chime"],
+  ["Stand up and stretch", "Weekdays · 11:30", "Soft pulse"],
+  ["Pay the rent", "Monthly · 1st", "Bell"],
+];
 export function RemindMock() {
+  const [gone, setGone] = useState<string[]>([]);
+  const [snoozed, setSnoozed] = useState<string[]>([]);
+  const left = REMINDERS.filter(([t]) => !gone.includes(t));
   return (
     <div className="toasts">
-      {[
-        ["Mum's birthday", "Every year · 9:00", "Chime"],
-        ["Stand up and stretch", "Weekdays · 11:30", "Soft pulse"],
-        ["Pay the rent", "Monthly · 1st", "Bell"],
-      ].map(([t, s, snd], i) => (
-        <div className="toast glass-solid" key={t} style={{ animationDelay: i * 1.4 + "s" }}>
-          <span className="f-ico">
-            <Icon d={I.bell} size={14} />
-          </span>
-          <span className="f-col">
-            <b>{t}</b>
-            <small>
-              {s} · {snd}
-            </small>
-          </span>
-          <span className="toast-btns">
-            <i>Snooze</i>
-            <i className="on">Dismiss</i>
-          </span>
+      {left.map(([t, s, snd], i) => {
+        const zz = snoozed.includes(t);
+        return (
+          <div className={"toast glass-solid" + (zz ? " is-snoozed" : "")} key={t} style={{ animationDelay: i * 1.4 + "s" }}>
+            <span className="f-ico">
+              <Icon d={zz ? I.zz : I.bell} size={14} />
+            </span>
+            <span className="f-col">
+              <b>{t}</b>
+              <small>{zz ? "Snoozed · rings again in 10 min" : `${s} · ${snd}`}</small>
+            </span>
+            <span className="toast-btns">
+              <button type="button" onClick={() => setSnoozed((x) => (zz ? x.filter((y) => y !== t) : [...x, t]))}>
+                {zz ? "Undo" : "Snooze"}
+              </button>
+              <button type="button" className="on" onClick={() => setGone((x) => [...x, t])}>
+                Dismiss
+              </button>
+            </span>
+          </div>
+        );
+      })}
+      {!left.length && (
+        <div className="toasts-done">
+          <Icon d={I.check} size={16} /> All caught up
+          <button
+            type="button"
+            onClick={() => {
+              setGone([]);
+              setSnoozed([]);
+            }}
+          >
+            Bring them back
+          </button>
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -472,27 +528,32 @@ function rnd(seed: number) {
   return x - Math.floor(x);
 }
 export function HabitMock() {
-  const cells = Array.from({ length: 15 * 7 }, (_, k) => {
-    const r = rnd(k + 3);
-    return k > 98 ? 0 : r > 0.82 ? 0 : r > 0.45 ? 3 : r > 0.2 ? 2 : 1;
-  });
+  const [cells, setCells] = useState<number[]>(() =>
+    Array.from({ length: 15 * 7 }, (_, k) => {
+      const r = rnd(k + 3);
+      return k > 98 ? 0 : r > 0.82 ? 0 : r > 0.45 ? 3 : r > 0.2 ? 2 : 1;
+    }),
+  );
+  const [done, setDone] = useState(true);
+  /* a click on a day steps it through the shades */
+  const bump = (k: number) => setCells((c) => c.map((v, j) => (j === k ? (v + 1) % 4 : v)));
   return (
     <div className="habit">
       <div className="habit-head">
-        <span className="habit-check">
+        <button type="button" className={"habit-check" + (done ? "" : " off")} aria-pressed={done} aria-label="Done today" onClick={() => setDone((d) => !d)}>
           <Icon d={I.check} size={14} />
-        </span>
+        </button>
         <span className="f-col">
           <b>Read 20 pages</b>
-          <small>Mon – Fri</small>
+          <small>{done ? "Done today · Mon – Fri" : "Tap to tick today"}</small>
         </span>
         <span className="habit-streak">
-          <b>12</b> day streak
+          <b>{done ? 12 : 11}</b> day streak
         </span>
       </div>
       <div className="heat">
         {cells.map((v, k) => (
-          <i key={k} className={"l" + v} style={{ animationDelay: (k % 15) * 30 + Math.floor(k / 15) * 12 + "ms" }} />
+          <button type="button" key={k} className={"l" + v} aria-label={"Day " + (k + 1)} onClick={() => bump(k)} style={{ animationDelay: (k % 15) * 30 + Math.floor(k / 15) * 12 + "ms" }} />
         ))}
       </div>
     </div>
@@ -566,6 +627,7 @@ export function StatsMock() {
 }
 
 export function PlannerMock() {
+  const [started, setStarted] = useState(false);
   return (
     <div className="plan-tl">
       {[
@@ -581,14 +643,20 @@ export function PlannerMock() {
             {l}
             {ic && <img src={`/media/apps/${ic}.svg`} alt="" />}
           </span>
-          {i === 0 && <i className="tl-btn">Start focus</i>}
+          {i === 0 && (
+            <button type="button" className={"tl-btn" + (started ? " is-on" : "")} onClick={() => setStarted((s) => !s)}>
+              {started ? "Focusing · Stop" : "Start focus"}
+            </button>
+          )}
         </div>
       ))}
     </div>
   );
 }
 
+const GROUPS = ["Social", "Video", "News", "Shopping"];
 export function BlockMock() {
+  const [on, setOn] = useState<string[]>(["Social"]);
   return (
     <div className="block">
       <div className="block-url glass-solid">
@@ -602,10 +670,14 @@ export function BlockMock() {
         <b>This site is blocked</b>
         <small>Back to the report. You've got this.</small>
         <span className="block-groups">
-          <i>Social</i>
-          <i>Video</i>
-          <i>News</i>
-          <i>Shopping</i>
+          {GROUPS.map((g) => {
+            const lit = on.includes(g);
+            return (
+              <button type="button" key={g} className={lit ? "on" : ""} aria-pressed={lit} onClick={() => setOn((x) => (lit ? x.filter((y) => y !== g) : [...x, g]))}>
+                {g}
+              </button>
+            );
+          })}
         </span>
       </div>
     </div>
@@ -640,17 +712,18 @@ export function TabsMock() {
 }
 
 export function VaultMock() {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="vault">
-      <span className="vault-lock">
-        <Icon d={I.lock} size={22} />
-      </span>
+    <div className={"vault" + (open ? " is-open" : "")}>
+      <button type="button" className="vault-lock" aria-pressed={open} aria-label={open ? "Lock" : "Unlock"} onClick={() => setOpen((o) => !o)}>
+        <Icon d={open ? "M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 6.8-1.2" : I.lock} size={22} />
+      </button>
       <div className="pin">
         {[0, 1, 2, 3, 4, 5].map((k) => (
           <i key={k} style={{ animationDelay: k * 0.25 + "s" }} />
         ))}
       </div>
-      <small>Encrypted with AES-GCM · only your password opens it</small>
+      <small>{open ? "Unlocked · tap the lock to close it again" : "Encrypted with AES-GCM · tap the lock to open"}</small>
     </div>
   );
 }
@@ -664,16 +737,22 @@ const HELLO = [
   ["العربية", "علامة تبويب جديدة تستحق الفتح أخيرًا."],
 ];
 export function TranslateMock() {
-  const i = useCycle(HELLO.length, 2200);
+  const [i, pick] = usePick(HELLO.length, 2200);
+  const [original, setOriginal] = useState(false);
+  const [lang, text] = HELLO[original ? 0 : i];
   return (
     <div className="tr">
       <div className="tr-badge glass-solid">
         <img src="/media/apps/translate.svg" alt="" />
-        <span key={i}>{HELLO[i][0]}</span>
-        <i>Show original</i>
+        <button type="button" className="tr-lang" key={i} onClick={() => pick((i + 1) % HELLO.length)} title="Next language">
+          {HELLO[i][0]}
+        </button>
+        <button type="button" className="tr-orig" aria-pressed={original} onClick={() => setOriginal((o) => !o)}>
+          {original ? "Translate" : "Show original"}
+        </button>
       </div>
-      <p className="tr-text" key={"t" + i} dir={HELLO[i][0] === "العربية" ? "rtl" : "ltr"}>
-        {HELLO[i][1]}
+      <p className="tr-text" key={"t" + i + original} dir={lang === "العربية" ? "rtl" : "ltr"}>
+        {text}
       </p>
     </div>
   );
@@ -730,9 +809,9 @@ export function CalendarMock() {
             <small>{t}</small>
           </span>
           {meet && (
-            <i className="ag-join">
+            <a className="ag-join" href="https://meet.google.com" target="_blank" rel="noopener noreferrer">
               <img src="/media/apps/meet.svg" alt="" /> Join
-            </i>
+            </a>
           )}
         </div>
       ))}
@@ -740,22 +819,38 @@ export function CalendarMock() {
   );
 }
 
+const TRACKS = [
+  ["Weightless", "Marconi Union · YouTube Music"],
+  ["Midnight City", "M83 · Spotify"],
+  ["Sunset Lover", "Petit Biscuit · SoundCloud"],
+  ["Intro", "The xx · Spotify"],
+];
 export function PlayingMock() {
+  const [t, setT] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const skip = (by: number) => {
+    setT((x) => (x + by + TRACKS.length) % TRACKS.length);
+    setPlaying(true);
+  };
   return (
-    <div className="np glass-solid">
+    <div className={"np glass-solid" + (playing ? "" : " is-paused")}>
       <span className="np-art" />
       <div className="np-body">
-        <b>Weightless</b>
-        <small>Marconi Union · YouTube Music</small>
+        <b key={t}>{TRACKS[t][0]}</b>
+        <small>{TRACKS[t][1]}</small>
         <span className="np-prog">
-          <i />
+          <i key={t} />
         </span>
         <span className="np-ctl">
-          <Icon d={I.prev} size={14} />
-          <span className="np-pp">
-            <Icon d={I.pause} size={14} />
-          </span>
-          <Icon d={I.next} size={14} />
+          <button type="button" aria-label="Previous" onClick={() => skip(-1)}>
+            <Icon d={I.prev} size={14} />
+          </button>
+          <button type="button" className="np-pp" aria-label={playing ? "Pause" : "Play"} onClick={() => setPlaying((p) => !p)}>
+            <Icon d={playing ? I.pause : I.play} size={14} />
+          </button>
+          <button type="button" aria-label="Next" onClick={() => skip(1)}>
+            <Icon d={I.next} size={14} />
+          </button>
         </span>
       </div>
     </div>
@@ -794,24 +889,42 @@ export function QuoteMock() {
     ["Simplicity is the ultimate sophistication.", "Leonardo da Vinci"],
     ["Well begun is half done.", "Aristotle"],
   ];
-  const i = useCycle(qs.length, 3600);
+  const [i, pick] = usePick(qs.length, 3600);
   return (
-    <figure className="quote" key={i}>
+    <figure className="quote tap" key={i} onClick={() => pick((i + 1) % qs.length)} title="Next quote">
       <blockquote>“{qs[i][0]}”</blockquote>
       <figcaption>— {qs[i][1]}</figcaption>
     </figure>
   );
 }
 
+/* a click wears that pointer on the whole page; a second click takes it off */
 export function CursorMock() {
+  const [worn, setWorn] = useState(-1);
+  const colors = ["#ffffff", "var(--a)", "#7cc4ff", "#f4a6c1", "#c8f169"];
+  useEffect(() => {
+    const site = document.querySelector<HTMLElement>(".site");
+    if (!site) return;
+    if (worn < 0) {
+      site.style.cursor = "";
+      return;
+    }
+    const c = colors[worn] === "var(--a)" ? getComputedStyle(document.documentElement).getPropertyValue("--a").trim() || "#d8c3a5" : colors[worn];
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="26" height="26"><path d="M5 3l14 7-6 2-2 6z" fill="${c}" stroke="#111" stroke-width="1.3" stroke-linejoin="round"/></svg>`;
+    site.style.cursor = `url("data:image/svg+xml,${encodeURIComponent(svg)}") 5 3, auto`;
+    return () => {
+      site.style.cursor = "";
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [worn]);
   return (
     <div className="cursors">
-      {["#ffffff", "var(--a)", "#7cc4ff", "#f4a6c1", "#c8f169"].map((c, k) => (
-        <span key={k} style={{ animationDelay: k * 0.3 + "s" }}>
+      {colors.map((c, k) => (
+        <button type="button" key={k} className={worn === k ? "on" : ""} aria-pressed={worn === k} aria-label={"Cursor " + (k + 1)} onClick={() => setWorn((w) => (w === k ? -1 : k))} style={{ animationDelay: k * 0.3 + "s" }}>
           <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
             <path d="M5 3l14 7-6 2-2 6z" fill={c} stroke="#111" strokeWidth="1.3" strokeLinejoin="round" />
           </svg>
-        </span>
+        </button>
       ))}
     </div>
   );
@@ -844,20 +957,43 @@ export function ZenMock() {
   );
 }
 
+/* the sliders drift on their own until you drag one */
 export function LightMock() {
+  const [vals, setVals] = useState<number[] | null>(null);
+  const shown = vals ?? [64, 82, 48];
+  const drag = (k: number) => (e: PointerEvent<HTMLSpanElement>) => {
+    if (e.type === "pointerdown") e.currentTarget.setPointerCapture(e.pointerId);
+    else if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const v = Math.round(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
+    setVals((x) => (x ?? shown).map((y, j) => (j === k ? v : y)));
+  };
   return (
     <div className="light">
-      <div className="light-card">
+      <div
+        className={"light-card" + (vals ? " is-set" : "")}
+        style={vals ? ({ "--glass": shown[0] / 100, borderRadius: 6 + shown[2] * 0.22 + "px" } as CSSProperties) : undefined}
+      >
         <span>Border light</span>
-        {[
-          ["Glass", 64],
-          ["Blur", 82],
-          ["Roundness", 48],
-        ].map(([l, v], k) => (
-          <label key={l as string}>
+        {["Glass", "Blur", "Roundness"].map((l, k) => (
+          <label key={l}>
             {l}
-            <span className="slider">
-              <i style={{ "--v": v + "%", animationDelay: k * 0.6 + "s" } as CSSProperties} />
+            <span
+              className="slider"
+              role="slider"
+              aria-label={l}
+              aria-valuenow={shown[k]}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              tabIndex={0}
+              onPointerDown={drag(k)}
+              onPointerMove={drag(k)}
+              onKeyDown={(e) => {
+                const by = e.key === "ArrowRight" ? 5 : e.key === "ArrowLeft" ? -5 : 0;
+                if (by) setVals((x) => (x ?? shown).map((y, j) => (j === k ? Math.min(100, Math.max(0, y + by)) : y)));
+              }}
+            >
+              <i style={{ "--v": shown[k] + "%", animationDelay: k * 0.6 + "s" } as CSSProperties} />
             </span>
           </label>
         ))}

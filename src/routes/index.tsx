@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { AnimeLovers } from "@/components/site/anime";
+import { Contact, Reviews } from "@/components/site/connect";
 import { Developers } from "@/components/site/developers";
 import { Footer, InstallButton, Nav, Reveal, useTheme } from "@/components/site/layout";
 import {
@@ -116,8 +117,10 @@ function Home() {
       <Control />
       <Themes />
       <Pricing />
+      <Reviews />
       <Developers />
       <Faq />
+      <Contact />
       <Closing />
       <Footer />
     </div>
@@ -806,7 +809,7 @@ function Faq() {
             Good to <em>know.</em>
           </h2>
           <p className="lede">
-            Something else? <a href={"mailto:" + CONTACT_EMAIL}>Write to us</a> and a real person answers.
+            Something else? <a href="#contact">Write to us</a> or <a href={"mailto:" + CONTACT_EMAIL}>email</a> and a real person answers.
           </p>
         </Reveal>
         <div className="faq">
@@ -824,16 +827,101 @@ function Faq() {
   );
 }
 
-/* apps that circle the closing card; each one opens the real site */
-const ORBIT = ["youtube", "spotify", "drive", "gmail", "github", "notion", "figma", "calendar"];
+/* apps that circle the closing card; each one opens the real site. The
+   one at the top of the ring (or under the pointer) tints the backdrop
+   with its colours and wallpaper. */
+const ORBIT = [
+  { n: "youtube", label: "YouTube", c: ["#ff0033", "#ff7a59"], wall: "crown" },
+  { n: "spotify", label: "Spotify", c: ["#1db954", "#0b6e4f"], wall: "meadow" },
+  { n: "drive", label: "Drive", c: ["#1fa463", "#4285f4"], wall: "halo" },
+  { n: "gmail", label: "Gmail", c: ["#ea4335", "#fbbc04"], wall: "roses" },
+  { n: "github", label: "GitHub", c: ["#8957e5", "#2f81f7"], wall: "wire" },
+  { n: "notion", label: "Notion", c: ["#e6e6e6", "#7d7a75"], wall: "monolith" },
+  { n: "figma", label: "Figma", c: ["#a259ff", "#f24e1e"], wall: "anime" },
+  { n: "calendar", label: "Calendar", c: ["#4285f4", "#34a853"], wall: "storm" },
+];
+
+/* the ring turns by itself; moving the pointer around it (or dragging
+   on a touch screen) spins it, and it coasts back to its idle speed */
+function useSpinner(count: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [top, setTop] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const idle = still ? 0 : 7.5; // degrees a second
+    let rot = 0;
+    let vel = idle;
+    let last = performance.now();
+    let prev: number | null = null;
+    let raf = 0;
+    let visible = true;
+    const step = 360 / count;
+    const tick = (t: number) => {
+      const dt = Math.min(0.05, (t - last) / 1000);
+      last = t;
+      vel += (idle - vel) * Math.min(1, dt * 1.6); // coast back to idle
+      rot += vel * dt;
+      el.style.setProperty("--rot", rot.toFixed(2) + "deg");
+      el.style.setProperty("--spin", Math.min(1, Math.abs(vel - idle) / 240).toFixed(3));
+      setTop((((Math.round(-rot / step) % count) + count) % count));
+      if (visible) raf = requestAnimationFrame(tick);
+    };
+    const angle = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      return (Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180) / Math.PI;
+    };
+    const move = (e: PointerEvent) => {
+      const a = angle(e);
+      if (prev != null) {
+        let d = a - prev;
+        if (d > 180) d -= 360;
+        if (d < -180) d += 360;
+        rot += d * 0.9;
+        vel = vel * 0.6 + (d / 0.016) * 0.4 * 0.5;
+        vel = Math.max(-900, Math.min(900, vel));
+      }
+      prev = a;
+    };
+    const leave = () => (prev = null);
+    const io = new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      cancelAnimationFrame(raf);
+      if (visible) {
+        last = performance.now();
+        raf = requestAnimationFrame(tick);
+      }
+    });
+    io.observe(el);
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerleave", leave);
+    el.addEventListener("pointerup", leave);
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerleave", leave);
+      el.removeEventListener("pointerup", leave);
+    };
+  }, [count]);
+  return [ref, top] as const;
+}
 
 function Closing() {
   const now = useNow(1000);
   const [q] = useTyped(["lofi beats to focus", "weather this weekend", "plan my afternoon", "!gh tanstack start"]);
+  const [ref, top] = useSpinner(ORBIT.length);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const on = hovered ?? top;
+  const app = ORBIT[on] ?? ORBIT[0]!;
   return (
-    <section className="closing">
-      {/* a slow aurora over a fading grid, in place of a video */}
+    <section className="closing" style={{ "--c1": app.c[0], "--c2": app.c[1] } as CSSProperties}>
+      {/* a slow aurora over a fading grid, tinted by the app on top of the ring */}
       <div className="closing-bg" aria-hidden="true">
+        {ORBIT.map((o, k) => (
+          <span key={o.n} className={"closing-wall" + (k === on ? " on" : "")} style={{ backgroundImage: `url(/media/wp/${o.wall}.jpg)` }} />
+        ))}
         <i />
         <i />
         <i />
@@ -850,40 +938,55 @@ function Closing() {
           <InstallButton />
         </Reveal>
 
-        <Reveal className="cu" delay={120}>
-          <div className="cu-ring" aria-hidden="true" />
-          <div className="cu-orbit">
-            {ORBIT.map((n, k) => (
-              <span key={n} className="cu-slot" style={{ "--k": k, "--n": ORBIT.length } as CSSProperties}>
-                <AppIcon n={n} />
-              </span>
-            ))}
-          </div>
-          <div className="cu-card glass">
-            <div className="cu-clock">
-              {hm(now)}
-              <small>{now ? now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" }) : " "}</small>
-            </div>
-            <div className="cu-search">
-              <Icon d={I.search} size={14} />
-              <span>
-                {q}
-                <i className="caret" />
-              </span>
-            </div>
-            <div className="cu-row">
-              <span className="f-ico">
-                <Icon d={I.spark} size={14} />
-              </span>
-              <span className="cu-line">
-                <b>Deep work</b>
-                <span className="cu-bar">
-                  <i />
+        <Reveal className="cu-wrap" delay={120}>
+          <div className="cu" ref={ref} onPointerLeave={() => setHovered(null)}>
+            <div className="cu-ring" aria-hidden="true" />
+            <div className="cu-orbit">
+              {ORBIT.map((o, k) => (
+                <span
+                  key={o.n}
+                  className={"cu-slot" + (k === on ? " on" : "")}
+                  style={{ "--k": k, "--n": ORBIT.length } as CSSProperties}
+                  onPointerEnter={() => setHovered(k)}
+                  onPointerLeave={() => setHovered(null)}
+                  onFocus={() => setHovered(k)}
+                  onBlur={() => setHovered(null)}
+                >
+                  <AppIcon n={o.n} label={o.label} />
                 </span>
-              </span>
+              ))}
             </div>
-            <div className="cu-toast">
-              <Icon d={I.bell} size={13} /> Stand up and stretch
+            <div className="cu-card glass">
+              <div className="cu-clock">
+                {hm(now)}
+                <small>{now ? now.toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" }) : " "}</small>
+              </div>
+              <div className="cu-search">
+                <Icon d={I.search} size={14} />
+                <span>
+                  {q}
+                  <i className="caret" />
+                </span>
+              </div>
+              <div className="cu-row">
+                <span className="f-ico">
+                  <Icon d={I.spark} size={14} />
+                </span>
+                <span className="cu-line">
+                  <b>Deep work</b>
+                  <span className="cu-bar">
+                    <i />
+                  </span>
+                </span>
+              </div>
+              <div className="cu-toast">
+                <Icon d={I.bell} size={13} /> Stand up and stretch
+              </div>
+              <div className="cu-now" key={app.n}>
+                <img src={`/media/apps/${app.n}.svg`} alt="" />
+                <span>{app.label}</span>
+                <small>circle the ring to spin</small>
+              </div>
             </div>
           </div>
         </Reveal>

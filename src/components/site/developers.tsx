@@ -1,5 +1,5 @@
 /* The people who build Atlas. Add someone by appending to DEVELOPERS;
-   one profile gets the wide layout, two or more sit side by side. */
+   each gets the wide layout, one at a time in a swipeable carousel. */
 import { useEffect, useState, type CSSProperties, type PointerEvent } from "react";
 import { Reveal } from "@/components/site/layout";
 import { useCycle } from "@/components/site/showcase";
@@ -58,7 +58,7 @@ const DEVELOPERS: Developer[] = [
       { when: "2023 — 2025", where: "V8 Digital Solutions", what: "Backend Developer" },
       { when: "2022 — 2023", where: "Reignsol", what: "Web Development Intern" },
     ],
-    site: { label: "muhammadaqibawan.netlify.app", href: "https://muhammadaqibawan.netlify.app/" },
+    site: { label: "aqibawan.com", href: "https://aqibawan.com/" },
     links: [
       { kind: "linkedin", label: "LinkedIn", href: "https://www.linkedin.com/in/maqibawan/" },
       {
@@ -67,6 +67,45 @@ const DEVELOPERS: Developer[] = [
         href: "https://stackoverflow.com/users/18027696/m-aqib",
       },
       { kind: "mail", label: "Email", href: "mailto:muhammadaqibawan07@gmail.com" },
+    ],
+  },
+  {
+    name: "Syed Taha",
+    initials: "ST",
+    roles: ["Junior Frontend Developer", "AR Developer", "AI & prompt specialist", "2D game developer", "Editor & creative designer"],
+    location: "Karachi, Pakistan",
+    status: "Building & learning",
+    bio: "I like learning by building: websites, small games, AR experiments, edits and designs. I build responsive interfaces with HTML, CSS, JavaScript and React, use AI to move faster, and refine the results by hand, turning ideas into interactive experiences.",
+    stats: [
+      [1, "+", "years building"],
+      [5, "+", "projects shipped"],
+      [6, "", "crafts"],
+    ],
+    stack: [
+      "HTML",
+      "CSS",
+      "JavaScript",
+      "React",
+      "Tailwind CSS",
+      "C#",
+      "AR",
+      "2D games",
+      "Prompt engineering",
+      "AI tools",
+      "Graphic design",
+      "Video editing",
+      "Alight Motion",
+    ],
+    path: [
+      { when: "2025 — now", where: "Eusopht", what: "AR Developer" },
+      { when: "2025", where: "Eusopht · internship", what: "Frontend & automation intern" },
+      { when: "Ongoing", where: "Freelance", what: "Editor & creative designer" },
+    ],
+    site: { label: "tahadevs.netlify.app", href: "https://tahadevs.netlify.app/" },
+    links: [
+      { kind: "linkedin", label: "LinkedIn", href: "https://www.linkedin.com/in/muhammad-taha-2169bb289/" },
+      { kind: "github", label: "GitHub", href: "https://github.com/tahafte0236-create" },
+      { kind: "mail", label: "Email", href: "mailto:taha.fte0236@gmail.com" },
     ],
   },
 ];
@@ -292,8 +331,62 @@ function Profile({ dev, wide, delay }: { dev: Developer; wide: boolean; delay: n
   );
 }
 
+/* one profile at a time: swipe, drag the scrollbar, or use the arrows and dots */
+function Carousel() {
+  const [track, setTrack] = useState<HTMLDivElement | null>(null);
+  const [at, setAt] = useState(0);
+  const n = DEVELOPERS.length;
+  useEffect(() => {
+    if (!track) return;
+    const on = () => setAt(Math.round(track.scrollLeft / track.clientWidth));
+    track.addEventListener("scroll", on, { passive: true });
+    return () => track.removeEventListener("scroll", on);
+  }, [track]);
+  const go = (k: number) => {
+    if (!track) return;
+    const i = (k + n) % n;
+    track.scrollTo({ left: i * track.clientWidth, behavior: "smooth" });
+  };
+  return (
+    <div className="devs-carousel" role="region" aria-roledescription="carousel" aria-label="The team">
+      <div
+        className="devs-track"
+        ref={setTrack}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight") go(at + 1);
+          if (e.key === "ArrowLeft") go(at - 1);
+        }}
+      >
+        {DEVELOPERS.map((d, k) => (
+          <div className="devs-slide" key={d.name} role="group" aria-roledescription="slide" aria-label={`${k + 1} of ${n}: ${d.name}`}>
+            <Profile dev={d} wide delay={0} />
+          </div>
+        ))}
+      </div>
+      {n > 1 && (
+        <div className="devs-nav">
+          <button type="button" className="devs-arrow" aria-label="Previous profile" onClick={() => go(at - 1)}>
+            <Glyph d="M15 5l-7 7 7 7" size={18} />
+          </button>
+          <div className="devs-dots">
+            {DEVELOPERS.map((d, k) => (
+              <button type="button" key={d.name} className={k === at ? "on" : ""} aria-label={"Show " + d.name} aria-current={k === at || undefined} onClick={() => go(k)}>
+                <span>{d.initials}</span>
+                <b>{d.name}</b>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="devs-arrow" aria-label="Next profile" onClick={() => go(at + 1)}>
+            <Glyph d="M9 5l7 7-7 7" size={18} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Developers() {
-  const wide = DEVELOPERS.length === 1;
   return (
     <section className="section devs" id="team">
       <div className="devs-glow" aria-hidden="true" />
@@ -307,11 +400,7 @@ export function Developers() {
             Atlas is built by a small team who open far too many tabs. Say hello.
           </p>
         </Reveal>
-        <div className={"devs-list" + (wide ? " one" : "")}>
-          {DEVELOPERS.map((d, k) => (
-            <Profile key={d.name} dev={d} wide={wide} delay={k * 120} />
-          ))}
-        </div>
+        <Carousel />
       </div>
     </section>
   );

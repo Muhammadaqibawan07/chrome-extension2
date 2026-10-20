@@ -40,6 +40,8 @@ export const env = {
     from: process.env.EMAIL_FROM || "",
   },
   cronSecret: process.env.CRON_SECRET || "",
+  /* where the site's contact and review forms are emailed */
+  contactTo: process.env.CONTACT_TO || "muhammadaqibawan07@gmail.com",
 
   /* the online wallpaper sources (routes/wallpapers.routes.js), each on
      or off: Pixabay (live videos, searched here with the key),
