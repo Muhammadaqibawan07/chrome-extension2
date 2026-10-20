@@ -14,7 +14,7 @@
   const put = (k, v) => (hasChrome ? chrome.storage.local.set({ [k]: v }) : localStorage.setItem(k, v));
 
   const STEPS = [
-    { el: "#q", pad: 10, title: "Search from here", text: "Type and press Enter. The icon on the left switches the search engine, and the clock icon shows your recent searches." },
+    { el: "#q", pad: 10, title: "Search from here", text: "Type and press Enter to search with your browser's search engine. The icon on the left searches one site instead, and the clock icon shows your recent searches." },
     { el: "#rail", title: "Your workspaces", text: "Keep separate shortcut sets, like Personal and Work, and switch between them with one click." },
     { el: "#launcher", title: "Shortcuts", text: "Your favourite sites in tidy cards. Drag to reorder, right-click to edit or remove, and use the tabs to move between sections." },
     { el: '.rail-btn[aria-label="Customize appearance"]', title: "Make it yours", text: "Themes, wallpapers (including live 4K video), cursors, fonts and your account all live in Customize." },

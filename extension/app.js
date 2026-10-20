@@ -2238,10 +2238,11 @@
   });
 
   /* ================= SEARCH ==============================================
-     The bar searches the default engine (Customize > Widgets > Search bar),
-     switched from the engine button on its left. "!yt cats" sends a single
-     search to another engine by its keyword. An engine URL may mark the
-     query with %s; otherwise the query is appended.
+     The bar searches with the browser's default search engine, through
+     chrome.search, so it follows the user's own search settings. "!yt cats"
+     sends a single search to a site by its keyword; the engine button on
+     the left fills that keyword in. A site URL may mark the query with %s;
+     otherwise the query is appended.
      History is kept apart: it is only shown in its own panel (the clock
      button), never as suggestions under the field. */
   const qEl = $("q");
@@ -2262,7 +2263,7 @@
   }
 
   /* "!yt cats" -> { engine: YouTube, term: "cats" }; anything else goes to
-     the default engine unchanged */
+     the browser's search engine unchanged */
   function parseQuery(raw) {
     const q = raw.trim();
     const m = q.match(/^!(\S+)(?:\s+([\s\S]*))?$/);
@@ -2299,7 +2300,7 @@
   }
 
   function syncSearchLabel() {
-    const label = "Search " + AS.engine().label;
+    const label = "Search the web";
     qEl.placeholder = label + "...";
     qEl.setAttribute("aria-label", label);
     const p = parseQuery(qEl.value);
@@ -2319,7 +2320,9 @@
     if (!t) return;
     const e = eng || AS.engine();
     remember(t, e.id);
-    window.location.href = searchUrl(t, e);
+    if (!e.web) { window.location.href = searchUrl(t, e); return; }
+    /* the browser's own engine, as the user set it in Chrome */
+    if (chrome.search && chrome.search.query) chrome.search.query({ text: t, disposition: "CURRENT_TAB" });
   }
 
   $("search").addEventListener("submit", (e) => {
@@ -2410,7 +2413,9 @@
       const list = typeof raw === "string" ? JSON.parse(raw) : raw;
       searches = (Array.isArray(list) ? list : [])
         .filter((h) => h && typeof h.q === "string" && h.q.trim())
-        .map((h) => ({ q: h.q, engine: typeof h.engine === "string" ? h.engine : "google", at: Number(h.at) || 0 }))
+        /* searches from engines that are gone (Google, Bing, custom...)
+           count as web searches */
+        .map((h) => ({ q: h.q, engine: AS.findEngine(h.engine) ? h.engine : "web", at: Number(h.at) || 0 }))
         .slice(0, HISTORY_MAX);
     } catch { searches = []; }
   }
@@ -2464,10 +2469,12 @@
     if (!silent && hadFocus) qEl.focus();
   }
 
-  /* engine menu: every engine, the default marked, its !keyword beside it */
+  /* engine menu: the browser's engine, then the sites with their !keyword.
+     Picking a site fills its keyword into the bar for this one search;
+     the default never changes. */
   function renderEngineMenu() {
     engineMenu.textContent = "";
-    const current = AS.engine().id;
+    const current = parseQuery(qEl.value).engine.id;
     const all = AS.engines();
     const add = (list, title) => {
       if (!list.length) return;
@@ -2492,22 +2499,20 @@
           k.textContent = "!" + eng.key;
           b.appendChild(k);
         }
+        if (eng.hint) b.title = eng.hint;
         b.addEventListener("click", () => {
-          AS.set("widgets.search.engine", eng.id); // the settings listener re-syncs the bar
+          const term = parseQuery(qEl.value).term;
+          qEl.value = (eng.key ? "!" + eng.key + " " : "") + term;
+          qEl.dispatchEvent(new Event("input"));
           closeSearchPop(true);
           qEl.focus();
+          qEl.setSelectionRange(qEl.value.length, qEl.value.length);
         });
         engineMenu.appendChild(b);
       });
     };
-    add(all.filter((e) => !e.custom), "Search with");
-    add(all.filter((e) => e.custom), "Your engines");
-    const more = document.createElement("button");
-    more.type = "button";
-    more.className = "sx-more";
-    more.textContent = "+ Add a custom engine";
-    more.addEventListener("click", () => { closeSearchPop(true); AS.open("widgets"); });
-    engineMenu.appendChild(more);
+    add(all.filter((e) => e.web), "Search the web");
+    add(all.filter((e) => !e.web), "Search a site");
   }
 
   engineBtn.addEventListener("click", (e) => {
@@ -2574,7 +2579,7 @@
     const go = document.createElement("button");
     go.type = "button";
     go.className = "sx-row-go";
-    go.title = "Search " + eng.label + " again";
+    go.title = (eng.web ? "Search the web" : "Search " + eng.label) + " again";
     go.appendChild(engineBadge(eng, "sx-badge"));
     const text = document.createElement("span");
     text.className = "sx-row-q";
@@ -3162,22 +3167,20 @@
   }
 
   function createSystemCommands() {
-    const engine = AS.engine().label;
     return [
       {
         id: "sys:search",
-        title: "Search " + engine,
-        description: "Search the web for your query",
+        title: "Search the web",
+        description: "Search with your browser's search engine",
         category: "Search",
-        keywords: ["search", "google", "web", "find", "query", engine.toLowerCase()],
+        keywords: ["search", "web", "find", "query"],
         mark: "⌕",
         /* always reachable, even when nothing else matches */
         fallback: true,
         /* the title picks up whatever follows "search" as you type */
         dynamic: (query) => {
-          const e = engine.toLowerCase();
-          const term = stripLead(query, ["search " + e + " for", "search " + e, "search google for", "search google", "search", e, "google"]);
-          return term ? { title: "Search " + engine + " for “" + term + "”", term } : null;
+          const term = stripLead(query, ["search the web for", "search the web", "search web for", "search web", "search for", "search", "web"]);
+          return term ? { title: "Search the web for “" + term + "”", term } : null;
         },
         run: (cmd) => {
           const term = (cmd && cmd.term) || "";

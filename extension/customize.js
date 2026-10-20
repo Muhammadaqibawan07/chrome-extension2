@@ -165,9 +165,6 @@
         panelAlpha: 40,
       },
       search: widget({
-        engine: "google", // a built-in id, or a custom engine's "c-…" id
-        customUrl: "",    // pre-list single custom URL, migrated on load
-        engines: [],      // custom engines: { id, name, url, key }
         history: true,    // remember searches (shown only in the history panel)
       }),
       media: widget(),
@@ -218,44 +215,21 @@
     ["fade", "Fade"],
   ];
 
-  /* built-in search engines. `key` is the !keyword that sends one search
-     there ("!yt cats"); `icon` is a key in config.js ICONS, otherwise the
-     bar draws `mono` on a `tint` badge. A URL marks the query with %s, or
-     the query is appended. Users add their own (widgets.search.engines). */
-  const googleUrl = typeof SEARCH_URL !== "undefined" ? SEARCH_URL : "https://www.google.com/search?q=";
+  /* search targets. "web" is the browser's own default search engine,
+     reached through chrome.search (Chrome Web Store policy: a new tab's
+     web search must follow the user's search settings), and every
+     ordinary search goes there. The rest are site searches that one
+     search can be sent to with a !keyword ("!yt cats"); `icon` is a key in
+     config.js ICONS, otherwise the bar draws `mono` on a `tint` badge. A
+     URL marks the query with %s, or the query is appended. */
   const ENGINES = {
-    google: { label: "Google", url: googleUrl, key: "g", icon: "google" },
+    web: { label: "Web", hint: "Your browser's search engine", web: true, mono: "⌕" },
     youtube: { label: "YouTube", url: "https://www.youtube.com/results?search_query=", key: "yt", icon: "youtube" },
     github: { label: "GitHub", url: "https://github.com/search?q=%s&type=repositories", key: "gh", icon: "github" },
     wikipedia: { label: "Wikipedia", url: "https://en.wikipedia.org/w/index.php?search=", key: "w", icon: "wikipedia" },
     chatgpt: { label: "ChatGPT", url: "https://chatgpt.com/?q=", key: "gpt", mono: "✺", tint: "#10a37f" },
     amazon: { label: "Amazon", url: "https://www.amazon.com/s?k=", key: "a", mono: "a", tint: "#ff9900" },
-    bing: { label: "Bing", url: "https://www.bing.com/search?q=", key: "b", mono: "b", tint: "#2b7fd9" },
-    duckduckgo: { label: "DuckDuckGo", url: "https://duckduckgo.com/?q=", key: "d", mono: "D", tint: "#de5833" },
-    brave: { label: "Brave", url: "https://search.brave.com/search?q=", key: "br", mono: "B", tint: "#fb542b" },
   };
-  const MAX_CUSTOM_ENGINES = 12;
-  const isSearchUrl = (u) => /^https?:\/\/[^\s]+$/i.test(String(u || "").trim());
-  const cleanKey = (k) => String(k || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10);
-
-  /* the user's own engines: a list, which merge() can't check, so it is
-     cleaned here. An old single "Custom" URL becomes the first entry. */
-  function normalizeEngines(list, legacyUrl) {
-    const out = [];
-    const ids = new Set();
-    (Array.isArray(list) ? list : []).forEach((e) => {
-      if (!e || typeof e !== "object" || out.length >= MAX_CUSTOM_ENGINES) return;
-      const name = String(e.name || "").trim().slice(0, 30);
-      const url = String(e.url || "").trim();
-      if (!name || !isSearchUrl(url)) return;
-      let id = typeof e.id === "string" && /^c-[\w-]+$/.test(e.id) ? e.id : "c-" + Date.now().toString(36) + out.length;
-      while (ids.has(id)) id += "x";
-      ids.add(id);
-      out.push({ id, name, url, key: cleanKey(e.key) });
-    });
-    if (!out.length && isSearchUrl(legacyUrl)) out.push({ id: "c-legacy", name: "Custom", url: legacyUrl.trim(), key: "" });
-    return out;
-  }
 
   /* the floating widgets that can be moved and resized. `origin` is the
      scaling anchor in their default spot; `w` / `h` mark an explicit width /
@@ -290,11 +264,6 @@
   function load(over) {
     const next = merge(clone(DEFAULTS), over);
     if (window.AtlasCursors) next.cursor = AtlasCursors.normalize(over && over.cursor);
-    const s = next.widgets.search;
-    const src = over && over.widgets && over.widgets.search;
-    s.engines = normalizeEngines(src && src.engines, s.customUrl);
-    s.customUrl = ""; // migrated into the list; don't bring it back later
-    if (s.engine === "custom") s.engine = s.engines[0] ? s.engines[0].id : "google";
     next.background.schedule = normalizeWpSchedule(over && over.background && over.background.schedule);
     const ai = next.language.ai;
     ai.custom = normalizeVoices(over && over.language && over.language.ai && over.language.ai.custom);
@@ -1194,10 +1163,9 @@
           colorRow("Box colour", "widgets.dock.panelColor", { when: (s) => !s.widgets.dock.panelMatch }),
           rangeRow("Box opacity", "widgets.dock.panelAlpha", 0, 100, 1, "%", { when: (s) => !s.widgets.dock.panelMatch })),
         card("search", "Search bar", "widgets.search.show",
-          selectRow("Default engine", "widgets.search.engine", engines().map((e) => [e.id, e.label])),
-          note("Switch engines from the icon at the left of the bar, or send one search elsewhere with a keyword: " +
-            engines().filter((e) => e.key).slice(0, 6).map((e) => "!" + e.key + " " + e.label).join(" · ") + "."),
-          engineEditor(),
+          note("The bar searches with your browser's default search engine — change it in Chrome's settings. " +
+            "To search one site instead, pick it from the icon at the left of the bar or start with its keyword: " +
+            engines().filter((e) => e.key).map((e) => "!" + e.key + " " + e.label).join(" · ") + "."),
           toggleRow("Remember searches", "widgets.search.history"),
           note("History stays in its own panel (the clock on the bar) and never shows under what you type. It stays on this computer."),
           h("div", { class: "cz-btns" },
@@ -2050,74 +2018,6 @@
       row("", h("div", { class: "cz-btns" }, list.length < MAX_WP_RULES ? add : note("That's as many changes as fit.")), { stack: true, when: on }));
   }
 
-  /* ---- custom search engines: edit in place, add below ---- */
-  function engineEditor() {
-    const list = settings.widgets.search.engines;
-    const commit = () => { set("widgets.search.engines", list); renderTab(); };
-    /* a keyword already used by another engine would be ambiguous */
-    const keyTaken = (key, selfId) => !!key && engines().some((e) => e.key === key && e.id !== selfId);
-    const input = (value, placeholder, label, extra) => h("input", Object.assign({
-      class: "cz-text", type: "text", value, placeholder, spellcheck: "false", "aria-label": label,
-    }, extra));
-
-    const rows = list.map((e, i) => {
-      const msg = h("p", { class: "cz-msg is-error", hidden: true });
-      const name = input(e.name, "Name", "Engine name", { maxlength: 30 });
-      const key = input(e.key ? "!" + e.key : "", "!key", "Keyword", { class: "cz-text cz-eng-key" });
-      const url = input(e.url, "https://example.com/search?q=%s", "Search URL");
-      const fail = (t) => { msg.textContent = t; msg.hidden = false; };
-      const save = () => {
-        const k = cleanKey(key.value);
-        if (!name.value.trim()) return fail("Give it a name.");
-        if (!isSearchUrl(url.value)) return fail("The URL must start with http:// or https://");
-        if (keyTaken(k, e.id)) return fail("!" + k + " is already used by another engine.");
-        msg.hidden = true;
-        Object.assign(list[i], { name: name.value.trim().slice(0, 30), url: url.value.trim(), key: k });
-        key.value = k ? "!" + k : "";
-        set("widgets.search.engines", list);
-      };
-      [name, key, url].forEach((el) => el.addEventListener("change", save));
-      return h("div", { class: "cz-eng" },
-        h("div", { class: "cz-eng-top" }, name, key,
-          h("button", {
-            type: "button", class: "cz-eng-del", "aria-label": "Delete " + e.name, title: "Delete", text: "✕",
-            onclick: () => {
-              list.splice(i, 1);
-              if (settings.widgets.search.engine === e.id) settings.widgets.search.engine = "google";
-              commit();
-            },
-          })),
-        url, msg);
-    });
-
-    const name = input("", "Name, e.g. Stack Overflow", "New engine name", { maxlength: 30 });
-    const key = input("", "!so", "New engine keyword", { class: "cz-text cz-eng-key" });
-    const url = input("", "https://stackoverflow.com/search?q=%s", "New engine URL");
-    const msg = h("p", { class: "cz-msg is-error", hidden: true });
-    const add = h("form", {
-      class: "cz-eng is-new",
-      onsubmit: (ev) => {
-        ev.preventDefault();
-        const k = cleanKey(key.value);
-        const fail = (t) => { msg.textContent = t; msg.hidden = false; };
-        if (!name.value.trim()) return fail("Give it a name.");
-        if (!isSearchUrl(url.value)) return fail("The URL must start with http:// or https:// — put %s where the search goes.");
-        if (keyTaken(k)) return fail("!" + k + " is already used by another engine.");
-        list.push({ id: "c-" + Date.now().toString(36), name: name.value.trim().slice(0, 30), url: url.value.trim(), key: k });
-        commit();
-      },
-    },
-    h("div", { class: "cz-eng-top" }, name, key),
-    url,
-    h("div", { class: "cz-btns" }, h("button", { type: "submit", class: "cz-btn is-primary", text: "Add engine" })),
-    msg);
-
-    return h("div", { class: "cz-engs" },
-      h("span", { class: "cz-label", text: "Custom engines" }),
-      ...rows,
-      list.length < MAX_CUSTOM_ENGINES ? add : note("That's the most custom engines there's room for."));
-  }
-
   function exportSettings() {
     const blob = new Blob([JSON.stringify({ atlas: "appearance", v: 1, settings }, null, 2)], { type: "application/json" });
     const a = h("a", { href: URL.createObjectURL(blob), download: "atlas-appearance.json" });
@@ -2797,20 +2697,14 @@
      private space workspaces, vaultSeed, vaultData, openVault */
   const app = {};
 
-  /* every engine, built-ins first, in one shape:
-     { id, label, url, key, icon?, mono?, tint?, custom? } */
+  /* every engine, the browser's own first, in one shape:
+     { id, label, url?, key?, web?, icon?, mono?, tint? } */
   function engines() {
-    const out = Object.entries(ENGINES).map(([id, e]) => Object.assign({ id }, e));
-    settings.widgets.search.engines.forEach((e) => out.push({
-      id: e.id, label: e.name, url: e.url, key: e.key, mono: e.name[0].toUpperCase(), custom: true,
-    }));
-    return out;
+    return Object.entries(ENGINES).map(([id, e]) => Object.assign({ id }, e));
   }
   const findEngine = (id) => engines().find((e) => e.id === id) || null;
-  /* the default engine; a deleted custom one falls back to Google */
-  function engine() {
-    return findEngine(settings.widgets.search.engine) || findEngine("google");
-  }
+  /* the default is always the browser's own search engine */
+  const engine = () => findEngine("web");
 
   const ready = store.get(KEY).then((raw) => {
     try {

@@ -168,8 +168,10 @@ const DEFAULT_WORKSPACES = [
   },
 ];
 
-/* ---------- 4. SEARCH ------------------------------------------ */
-const SEARCH_URL = "https://www.google.com/search?q=";
+/* ---------- 4. SEARCH ------------------------------------------
+   The search bar always uses the browser's default search engine
+   (chrome.search), so there is no search URL to set here. Site searches
+   (!yt, !gh, ...) are listed in customize.js ENGINES.               */
 
 /* ---------- 5. AI ASSISTANT ------------------------------------
    By default the assistant is NOT configured and will politely say so.
