@@ -556,6 +556,15 @@
   }
   AS.app.setWallpaper = (id) => setWallpaper(id);
 
+  /* the built-in list (builtins.js) came from the server or changed: on a
+     first run there's nothing until it does. Before boot, boot reads it. */
+  let wpBooted = false;
+  if (window.AtlasBuiltIns) AtlasBuiltIns.on(() => {
+    if (!wpBooted) return;
+    if (!WALLPAPERS.some((w) => w.id === currentWp)) currentWp = (WALLPAPERS[0] || {}).id || null;
+    applyBackground(false);
+  });
+
   /* --- wallpaper schedule (Customize > Background > Schedule) -----------
      Each rule says "from this moment, show this wallpaper". The rule whose
      latest occurrence is most recent is in charge — unless the user picked
@@ -2238,10 +2247,11 @@
   });
 
   /* ================= SEARCH ==============================================
-     The bar searches the default engine (Customize > Widgets > Search bar),
-     switched from the engine button on its left. "!yt cats" sends a single
-     search to another engine by its keyword. An engine URL may mark the
-     query with %s; otherwise the query is appended.
+     The bar searches with the browser's default search engine, through
+     chrome.search, so it follows the user's own search settings. "!yt cats"
+     sends a single search to a site by its keyword; the engine button on
+     the left fills that keyword in. A site URL may mark the query with %s;
+     otherwise the query is appended.
      History is kept apart: it is only shown in its own panel (the clock
      button), never as suggestions under the field. */
   const qEl = $("q");
@@ -2262,7 +2272,7 @@
   }
 
   /* "!yt cats" -> { engine: YouTube, term: "cats" }; anything else goes to
-     the default engine unchanged */
+     the browser's search engine unchanged */
   function parseQuery(raw) {
     const q = raw.trim();
     const m = q.match(/^!(\S+)(?:\s+([\s\S]*))?$/);
@@ -2299,7 +2309,7 @@
   }
 
   function syncSearchLabel() {
-    const label = "Search " + AS.engine().label;
+    const label = "Search the web";
     qEl.placeholder = label + "...";
     qEl.setAttribute("aria-label", label);
     const p = parseQuery(qEl.value);
@@ -2319,7 +2329,9 @@
     if (!t) return;
     const e = eng || AS.engine();
     remember(t, e.id);
-    window.location.href = searchUrl(t, e);
+    if (!e.web) { window.location.href = searchUrl(t, e); return; }
+    /* the browser's own engine, as the user set it in Chrome */
+    if (chrome.search && chrome.search.query) chrome.search.query({ text: t, disposition: "CURRENT_TAB" });
   }
 
   $("search").addEventListener("submit", (e) => {
@@ -2333,10 +2345,6 @@
      you say fills the field as you speak; when you stop, it searches
      (or waits for Enter, if "Search when I stop talking" is off). --- */
   const Voice = window.AtlasVoice;
-  /* voice typing and spoken answers are part of Atlas Pro: a free account
-     gets the upgrade box (pro.js) instead */
-  const voicePro = () => !!window.AtlasPro && AtlasPro.need("Voice typing and the assistant's voice are part of Atlas Pro.");
-  const voiceAllowed = () => !window.AtlasPro || AtlasPro.isPro();
   const searchMic = $("searchMic");
   let searchRec = null;
 
@@ -2360,7 +2368,7 @@
   }
   function searchByVoice() {
     if (searchRec) return searchRec.stop();
-    if (!Voice || voicePro()) return;
+    if (!Voice) return;
     const before = qEl.value;
     searchMic.classList.add("is-live");
     searchMic.setAttribute("aria-pressed", "true");
@@ -2410,7 +2418,9 @@
       const list = typeof raw === "string" ? JSON.parse(raw) : raw;
       searches = (Array.isArray(list) ? list : [])
         .filter((h) => h && typeof h.q === "string" && h.q.trim())
-        .map((h) => ({ q: h.q, engine: typeof h.engine === "string" ? h.engine : "google", at: Number(h.at) || 0 }))
+        /* searches from engines that are gone (Google, Bing, custom...)
+           count as web searches */
+        .map((h) => ({ q: h.q, engine: AS.findEngine(h.engine) ? h.engine : "web", at: Number(h.at) || 0 }))
         .slice(0, HISTORY_MAX);
     } catch { searches = []; }
   }
@@ -2464,10 +2474,12 @@
     if (!silent && hadFocus) qEl.focus();
   }
 
-  /* engine menu: every engine, the default marked, its !keyword beside it */
+  /* engine menu: the browser's engine, then the sites with their !keyword.
+     Picking a site fills its keyword into the bar for this one search;
+     the default never changes. */
   function renderEngineMenu() {
     engineMenu.textContent = "";
-    const current = AS.engine().id;
+    const current = parseQuery(qEl.value).engine.id;
     const all = AS.engines();
     const add = (list, title) => {
       if (!list.length) return;
@@ -2492,22 +2504,20 @@
           k.textContent = "!" + eng.key;
           b.appendChild(k);
         }
+        if (eng.hint) b.title = eng.hint;
         b.addEventListener("click", () => {
-          AS.set("widgets.search.engine", eng.id); // the settings listener re-syncs the bar
+          const term = parseQuery(qEl.value).term;
+          qEl.value = (eng.key ? "!" + eng.key + " " : "") + term;
+          qEl.dispatchEvent(new Event("input"));
           closeSearchPop(true);
           qEl.focus();
+          qEl.setSelectionRange(qEl.value.length, qEl.value.length);
         });
         engineMenu.appendChild(b);
       });
     };
-    add(all.filter((e) => !e.custom), "Search with");
-    add(all.filter((e) => e.custom), "Your engines");
-    const more = document.createElement("button");
-    more.type = "button";
-    more.className = "sx-more";
-    more.textContent = "+ Add a custom engine";
-    more.addEventListener("click", () => { closeSearchPop(true); AS.open("widgets"); });
-    engineMenu.appendChild(more);
+    add(all.filter((e) => e.web), "Search the web");
+    add(all.filter((e) => !e.web), "Search a site");
   }
 
   engineBtn.addEventListener("click", (e) => {
@@ -2574,7 +2584,7 @@
     const go = document.createElement("button");
     go.type = "button";
     go.className = "sx-row-go";
-    go.title = "Search " + eng.label + " again";
+    go.title = (eng.web ? "Search the web" : "Search " + eng.label) + " again";
     go.appendChild(engineBadge(eng, "sx-badge"));
     const text = document.createElement("span");
     text.className = "sx-row-q";
@@ -2732,7 +2742,7 @@
       say.title = "Read out loud";
       say.setAttribute("aria-label", "Read out loud");
       say.innerHTML = SPEAK_SVG;
-      say.addEventListener("click", () => (speakingBtn === say ? stopSpeaking() : voicePro() ? null : sayReply(text, say)));
+      say.addEventListener("click", () => (speakingBtn === say ? stopSpeaking() : sayReply(text, say)));
       const meta = document.createElement("span");
       meta.className = "msg-meta";
       meta.append(t, say);
@@ -2840,7 +2850,6 @@
   /* voice typing into the box; in talk mode it sends by itself */
   function listenChat() {
     if (chatRec || !Voice || !Voice.canListen) return;
-    if (voicePro()) { if (talk) setTalk(false); return; }
     stopSpeaking();
     const before = talk ? "" : aiInput.value.trim();
     const put = (t) => {
@@ -2874,7 +2883,6 @@
 
   /* talk mode: listen → send → speak the answer → listen again */
   function setTalk(on) {
-    if (on && voicePro()) return;
     talk = on;
     aiTalk.classList.toggle("is-on", on);
     aiTalk.setAttribute("aria-pressed", String(on));
@@ -2892,7 +2900,7 @@
   /* after an answer: read it out if asked to, then carry on talking */
   function afterReply(reply, sayBtn) {
     const ai = AS.get().language.ai;
-    if ((talk || ai.speak) && Voice && Voice.canSpeak && voiceAllowed()) {
+    if ((talk || ai.speak) && Voice && Voice.canSpeak) {
       sayReply(reply, sayBtn).then((finished) => { if (talk && finished) listenChat(); });
     } else if (talk) listenChat();
   }
@@ -2950,7 +2958,6 @@
       sw.className = "cz-switch";
       sw.checked = L.ai.speak;
       sw.addEventListener("change", () => {
-        if (sw.checked && voicePro()) { sw.checked = false; return; }
         AS.set("language.ai.speak", sw.checked);
         if (!sw.checked) stopSpeaking();
       });
@@ -3162,22 +3169,20 @@
   }
 
   function createSystemCommands() {
-    const engine = AS.engine().label;
     return [
       {
         id: "sys:search",
-        title: "Search " + engine,
-        description: "Search the web for your query",
+        title: "Search the web",
+        description: "Search with your browser's search engine",
         category: "Search",
-        keywords: ["search", "google", "web", "find", "query", engine.toLowerCase()],
+        keywords: ["search", "web", "find", "query"],
         mark: "⌕",
         /* always reachable, even when nothing else matches */
         fallback: true,
         /* the title picks up whatever follows "search" as you type */
         dynamic: (query) => {
-          const e = engine.toLowerCase();
-          const term = stripLead(query, ["search " + e + " for", "search " + e, "search google for", "search google", "search", e, "google"]);
-          return term ? { title: "Search " + engine + " for “" + term + "”", term } : null;
+          const term = stripLead(query, ["search the web for", "search the web", "search web for", "search web", "search for", "search", "web"]);
+          return term ? { title: "Search the web for “" + term + "”", term } : null;
         },
         run: (cmd) => {
           const term = (cmd && cmd.term) || "";
@@ -4160,6 +4165,7 @@
     AS.ready,
     V ? V.ready : null,
     window.AtlasLibrary ? AtlasLibrary.ready : null,
+    window.AtlasBuiltIns ? AtlasBuiltIns.ready : null,
   ]).then(([s]) => {
     /* the saved layout replaces the config.js defaults; a first launch, or
        anything unreadable, falls back to them */
@@ -4175,7 +4181,10 @@
     syncSearchLabel();
     syncVoiceUi();
     syncClockHeight();
-    currentWp = (WALLPAPERS.find((w) => w.id === s.wallpaper) || WALLPAPERS[0] || {}).id || null;
+    /* no list yet (first run after the update): keep the saved id for when
+       it comes */
+    currentWp = (WALLPAPERS.find((w) => w.id === s.wallpaper) || WALLPAPERS[0] || {}).id || s.wallpaper || null;
+    wpBooted = true;
     wpManualAt = Number(s[WP_MANUAL_KEY]) || 0;
     /* a scheduled wallpaper is the one the page opens with — no crossfade */
     const due = scheduledWallpaper(Date.now());

@@ -6,9 +6,11 @@ import { HttpError } from "../lib/http-error.js";
 const list = (v) => (v || "").split(",").map((s) => s.trim()).filter(Boolean);
 const int = (v, d) => (Number.isFinite(Number(v)) && v !== "" && v != null ? Number(v) : d);
 
+const appUrl = (process.env.APP_URL || "http://localhost:3001").replace(/\/$/, "");
+
 export const env = {
   port: int(process.env.PORT, 3001),
-  appUrl: (process.env.APP_URL || "http://localhost:3001").replace(/\/$/, ""),
+  appUrl,
   /* the marketing site (repo root, its own Vercel project): checkout and the
      legal pages live there. Empty = this backend's own public/ pages. */
   siteUrl: (process.env.SITE_URL || "").replace(/\/$/, ""),
@@ -28,10 +30,9 @@ export const env = {
 
   geminiKey: process.env.GEMINI_API_KEY || "",
   geminiModel: process.env.GEMINI_MODEL || "gemini-3.1-flash-lite",
-  aiDailyLimit: {
-    FREE: int(process.env.AI_DAILY_LIMIT_FREE, 20),
-    PRO: int(process.env.AI_DAILY_LIMIT_PRO, 500),
-  },
+  /* assistant messages a day, the same for every account (the assistant
+     is free); AI_DAILY_LIMIT_PRO is the old name */
+  aiDailyLimit: int(process.env.AI_DAILY_LIMIT || process.env.AI_DAILY_LIMIT_PRO, 500),
 
   /* the weekly stats email (Resend) and the cron that sends it */
   email: {
@@ -56,6 +57,10 @@ export const env = {
     on: process.env.WALLHAVEN === "true",
     url: process.env.WALLHAVEN_URL || "https://wallhaven.cc/api/v1/search",
   },
+  /* where the built-in live wallpapers' .mp4 files are served from, no
+     trailing slash. Default: this backend's own public/wallpapers/. Set it
+     to move them to other storage. Listed by GET /wallpapers/builtin. */
+  builtinWallpapersUrl: (process.env.BUILTIN_WALLPAPERS_URL || `${appUrl}/wallpapers`).replace(/\/+$/, ""),
 
   paddle: {
     env: process.env.PADDLE_ENV === "production" ? "production" : "sandbox",
