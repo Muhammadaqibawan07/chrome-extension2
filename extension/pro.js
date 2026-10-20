@@ -2,12 +2,13 @@
    What a free account may use, and what it sees when it reaches a limit:
      - need(text): false for Pro; otherwise opens the upgrade box and
        answers true (the caller stops there);
-     - wallpaper(key): wallpapers — PRO_CONFIG.freeWallpapers of them for
-       free (built-in, online stills and live together, kept in "wp:used";
-       one already used can always be set again, and the first built-in
-       one, which a new tab starts on, never counts);
-     - FREE_THEMES / FREE_CURSORS: the theme presets and cursor packs a
-       free account can choose; the rest are Pro.
+     - wallpaper(key): 4K stills are free for everyone; live wallpapers
+       (built-in and online videos) are Pro, but for
+       PRO_CONFIG.freeWallpapers picks (kept in "wp:used"; one already used
+       can always be set again, and the first built-in one, which a new tab
+       starts on, never counts);
+     - FREE_CURSORS: the cursor packs a free account can choose; the rest
+       are Pro. Every theme, the assistant and the Language tab are free.
    Every new account gets Pro free for its first days (TRIAL_DAYS on the
    server). When the server says the account isn't Pro (AtlasAccount.verify),
    any Pro look still on is put back (AtlasSettings.dropPro), and the first
@@ -19,8 +20,7 @@
   const A = window.AtlasAccount;
   const AS = window.AtlasSettings;
   const CFG = typeof PRO_CONFIG !== "undefined" ? PRO_CONFIG : {};
-  const FREE_WALLPAPERS = Number.isFinite(CFG.freeWallpapers) ? CFG.freeWallpapers : 5;
-  const FREE_THEMES = ["sand"];
+  const FREE_WALLPAPERS = Number.isFinite(CFG.freeWallpapers) ? CFG.freeWallpapers : 0;
   const FREE_CURSORS = ["default"];
 
   const hasChrome = typeof chrome !== "undefined" && chrome.storage && chrome.storage.local;
@@ -88,11 +88,10 @@
     return s;
   };
   const PERKS = [
-    ["palette", "Every theme & cursor", "All presets, your own colours, glass and fonts, every cursor"],
-    ["image", "Unlimited 4K wallpapers", "Stills and live videos — free accounts get " + FREE_WALLPAPERS],
+    ["palette", "Every cursor", "Every cursor pack, and your own"],
+    ["image", "Live wallpapers", "Every built-in and online live video — 4K stills are free"],
     ["shield", "Site blocker", "Block distracting sites, on a schedule or all day"],
     ["lock", "Private space", "An encrypted corner for what's only yours"],
-    ["mic", "Voice typing & assistant voice", "Talk to search and chat, hear answers read out"],
     ["cloud", "Sync & backup", "Everything in step on every computer"],
     ["spark", "AI planner & stats", "Day planner, calendar and 30-day insights"],
   ];
@@ -179,7 +178,7 @@
         h("div", { class: "pro-hero" },
           h("span", { class: "pro-tag", text: "ATLAS PRO" }),
           h("h2", { class: "pro-title", id: "proTitle", text: title && title !== "Atlas Pro" ? title : "Make Atlas entirely yours" }),
-          h("p", { class: "pro-text", text: text || "Every theme, unlimited 4K wallpapers, sync and more — one small subscription." }),
+          h("p", { class: "pro-text", text: text || "Live wallpapers, sync, the private space and more — one small subscription." }),
           status),
         h("ul", { class: "pro-perks" }, PERKS.map(([ic, name, sub]) =>
           h("li", null, svg(ic), h("span", null, h("b", { text: name }), h("small", { text: sub }))))),
@@ -226,7 +225,7 @@
       h("div", { class: "pro-panel pro-done", role: "dialog", "aria-modal": "true", "aria-labelledby": "proDone" },
         svg("check", "pro-done-ico"),
         h("h2", { class: "pro-title", id: "proDone", text: "Welcome to Atlas Pro" }),
-        h("p", { class: "pro-text", text: "Your payment went through and everything is unlocked: themes, wallpapers, sync, the lot. Thank you for supporting Atlas." }),
+        h("p", { class: "pro-text", text: "Your payment went through and everything is unlocked: live wallpapers, sync, the lot. Thank you for supporting Atlas." }),
         h("button", { type: "button", class: "pro-cta", text: "Start exploring", onclick: () => {
           m.classList.add("is-leaving");
           setTimeout(() => m.remove(), 180);
@@ -269,20 +268,26 @@
     return true;
   }
 
-  /* ---------- online wallpapers: a few for free ---------- */
+  /* ---------- wallpapers: 4K stills free, live ones Pro ---------- */
   const USED_KEY = "wp:used";
   let used = [];
   const usedReady = get(USED_KEY).then((v) => { if (Array.isArray(v)) used = v.filter((k) => typeof k === "string").slice(0, 200); });
   if (hasChrome) chrome.storage.onChanged.addListener((ch, area) => {
     if (area === "local" && ch[USED_KEY] && Array.isArray(ch[USED_KEY].newValue)) used = ch[USED_KEY].newValue;
   });
+  /* Wallhaven stills (library.js keys them "wh:") */
+  const isStill = (key) => String(key).startsWith("wh:");
   const wallpapersLeft = () => Math.max(0, FREE_WALLPAPERS - used.length);
-  const canUse = (key) => isPro() || used.includes(key) || used.length < FREE_WALLPAPERS;
+  /* the line under the wallpaper pickers, for a free account */
+  const wallpaperNote = () => "4K stills are free. " + (FREE_WALLPAPERS
+    ? "Live wallpapers: " + wallpapersLeft() + " of " + FREE_WALLPAPERS + " free picks left — Atlas Pro has no limit."
+    : "Live wallpapers are part of Atlas Pro.");
+  const canUse = (key) => isPro() || isStill(key) || used.includes(key) || used.length < FREE_WALLPAPERS;
   /* true = go ahead (and count it); false = the upgrade box is open */
   function wallpaper(key) {
-    if (isPro() || used.includes(key)) return true;
+    if (isPro() || isStill(key) || used.includes(key)) return true;
     if (used.length >= FREE_WALLPAPERS) {
-      openBox("Atlas Pro", "You've used your " + FREE_WALLPAPERS + " free wallpapers. Atlas Pro sets as many built-in, 4K and live wallpapers as you like.");
+      openBox("Atlas Pro", "Live wallpapers are part of Atlas Pro. Every 4K still wallpaper stays free.");
       return false;
     }
     used = used.concat(key);
@@ -297,7 +302,7 @@
   /* the order a free account sees wallpapers in: its own first (already
      chosen, or the free built-in one), then ones it can still choose, then
      the locked ones. Pro: all 0, so lists keep their own order. */
-  const rank = (key) => (isPro() || used.includes(key) || key === "bi:" + firstBuiltIn() ? 0 : canUse(key) ? 1 : 2);
+  const rank = (key) => (isPro() || isStill(key) || used.includes(key) || key === "bi:" + firstBuiltIn() ? 0 : canUse(key) ? 1 : 2);
 
   /* ---------- after the server has answered ---------- */
   /* only when this computer already thinks the account isn't Pro (a paid
@@ -321,7 +326,7 @@
     if (t && !t.active && u && (await get(TRIAL_SEEN)) !== u.id) {
       await put({ [TRIAL_SEEN]: u.id });
       if (!document.querySelector(".pro-welcome.is-ended")) {
-        openBox("Your free trial has ended", "Thanks for trying Atlas Pro. Subscribe to keep every theme, cursor and wallpaper, the private space and backup.");
+        openBox("Your free trial has ended", "Thanks for trying Atlas Pro. Subscribe to keep live wallpapers, every cursor, the private space and backup.");
       }
     }
   }
@@ -375,10 +380,10 @@
         buttons = upgradeButtons(msg, close);
       } else if (t && t.active) {
         badge = t.daysLeft + (t.daysLeft === 1 ? " day" : " days") + " of Pro left";
-        line = "Enjoying the trial? Keep every theme and wallpaper when it ends.";
+        line = "Enjoying the trial? Keep live wallpapers and every cursor when it ends.";
         buttons = upgradeButtons(msg, close);
       } else if (ended) {
-        line = "Your free trial has ended. Subscribe to keep every theme, cursor and wallpaper, the private space and backup.";
+        line = "Your free trial has ended. Subscribe to keep live wallpapers, every cursor, the private space and backup.";
         buttons = upgradeButtons(msg, close);
       } else if (isPro()) {
         badge = "Pro";
@@ -451,11 +456,10 @@
     canUseBuiltIn,
     rank,
     wallpapersLeft,
+    wallpaperNote,
     freeWallpapers: FREE_WALLPAPERS,
     usedReady,
-    freeTheme: (id) => FREE_THEMES.includes(id),
     freeCursor: (style) => FREE_CURSORS.includes(style),
-    FREE_THEMES,
     FREE_CURSORS,
   };
 })();

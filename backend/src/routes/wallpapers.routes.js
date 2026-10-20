@@ -186,6 +186,30 @@ async function wavesPage(q, page) {
   return { items, more: page < (Number(r.headers.get("x-wp-totalpages")) || 0) };
 }
 
+/* The built-in live wallpapers. The files aren't packed into the extension
+   (they made it 400+ MB): they're in public/wallpapers/ here (or at
+   BUILTIN_WALLPAPERS_URL) and the extension fetches this list. Add or swap
+   one here and put its file there — no new extension version needed. Keep the ids: a user's saved wallpaper
+   and schedule rules point at them. */
+const BUILTIN = [
+  { id: "w1", label: "Wallpaper 01", file: "wallpaper-1.mp4" },
+  { id: "w2", label: "Wallpaper 02", file: "wallpaper-2.mp4" },
+  { id: "w3", label: "Wallpaper 03", file: "wallpaper-3.mp4" },
+  { id: "w4", label: "Wallpaper 04", file: "wallpaper-4.mp4" },
+  { id: "w5", label: "Wallpaper 05", file: "wallpaper-5.mp4" },
+  { id: "w6", label: "Wallpaper 06", file: "wallpaper-6.mp4" },
+];
+
+/* GET /wallpapers/builtin -> { items: [{ id, label, file }] }, `file` being
+   the video's full https URL. Everyone gets the list; which ones a free
+   account may set is up to the extension (pro.js). */
+wallpapersRouter.get("/wallpapers/builtin", (req, res) => {
+  const base = env.builtinWallpapersUrl;
+  if (!/^https?:\/\//.test(base)) throw new HttpError(503, "Built-in wallpapers aren't set up on the server (BUILTIN_WALLPAPERS_URL).", { code: "not_configured" });
+  res.set("Cache-Control", "public, max-age=3600");
+  res.json({ items: BUILTIN.map((w) => ({ id: w.id, label: w.label, file: `${base}/${encodeURIComponent(w.file)}` })) });
+});
+
 /* GET /wallpapers/sources -> { pixabay: bool, wallpaperwaves: bool,
    wallhaven: url | null }: what the extension may show */
 wallpapersRouter.get("/wallpapers/sources", (req, res) => {

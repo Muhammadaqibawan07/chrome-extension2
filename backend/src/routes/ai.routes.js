@@ -15,7 +15,7 @@ aiRouter.post("/ai/chat", requireAuth, async (req, res) => {
   if (!contents.length) throw new HttpError(400, "No message to answer.");
 
   if (!(await claimAiMessage(req.user))) {
-    throw new HttpError(429, "You've used today's assistant messages. Upgrade to Pro for more.", {
+    throw new HttpError(429, "You've used today's assistant messages. They'll be back tomorrow.", {
       code: "quota_exceeded",
       usage: await getAiUsage(req.user),
     });

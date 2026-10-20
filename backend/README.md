@@ -20,7 +20,8 @@ src/middleware/         cors, auth (requireAuth / requirePro), errors
 src/routes/             auth, ai, billing, settings
 src/services/           tokens, google, gemini, paddle, usage
 prisma/schema.prisma    database schema (+ migrations/)
-public/                 privacy.html, checkout.html (Paddle payment page)
+public/                 privacy.html, checkout.html (Paddle payment page),
+                        wallpapers/ (the built-in live wallpapers)
 ```
 
 ## Local setup
@@ -68,6 +69,8 @@ After changing `schema.prisma`, run `npm run db:migrate -- --name what_changed`.
 - `WALLHAVEN=true` turns on still 4K images. `WALLHAVEN_URL` is the search API (`https://wallhaven.cc/api/v1/search`). The extension calls it itself, SFW only, with no key, so Wallhaven's rate limit counts per user rather than against this server.
 - Nothing is copied or cached here.
 
+**Built-in wallpapers.** The extension doesn't ship the videos; it asks `GET /wallpapers/builtin` for them. They live in `public/wallpapers/` and are served from `APP_URL/wallpapers/` (set `APP_URL` to the Vercel URL). To serve them from other storage instead, set `BUILTIN_WALLPAPERS_URL`. The list itself is `BUILTIN` in `src/routes/wallpapers.routes.js`: add an entry and drop its file in `public/wallpapers/` to add a wallpaper, with no new extension version.
+
 ## Deploy to Vercel
 
 1. Create a new Vercel project with **Root Directory = `backend`**.
@@ -100,6 +103,7 @@ Send `Authorization: Bearer <accessToken>` on every route marked 🔒.
 | PUT 🔒 | `/stats/prefs` | `{ weeklyEmail }` → `{ weeklyEmail }`. Turning it on needs Pro. |
 | PUT 🔒 Pro | `/stats/week` | `{ weeks: [{ week: "YYYY-MM-DD" (a Monday), data }] }` → `{ ok }` |
 | GET | `/cron/weekly-email` | Vercel Cron only (`Bearer $CRON_SECRET`). Emails last week's summary. |
+| GET | `/wallpapers/builtin` | → `{ items: [{ id, label, file }] }`: the built-in live wallpapers, `file` being the video's URL under `APP_URL/wallpapers` (or `BUILTIN_WALLPAPERS_URL`). |
 | GET | `/wallpapers/sources` | → `{ pixabay, wallhaven }`: whether Pixabay is on, and the Wallhaven search URL (or `null` when off). |
 | GET | `/wallpapers/live?q=&page=` | Pixabay video search (no `q` = popular) → `{ items: [{ id, thumb, video, width, height, duration, credit, creditUrl, link }], page, more, pro }`. `video` is filled in for everyone; free accounts may set `PRO_CONFIG.freeWallpapers` (5) online wallpapers, counted by the extension. |
 | GET | `/billing/config` | → `{ environment, clientToken, prices }` |
@@ -133,14 +137,16 @@ To lock a route to Pro users, add `requirePro` after `requireAuth` (see `src/mid
 
 | Feature | Free | Pro |
 |---|---|---|
+| Themes (presets, colours, glass, font) | ✓ | ✓ |
+| Language tab (translation, voice typing, assistant voice) | ✓ | ✓ |
 | Online wallpapers: 4K stills (Wallhaven) | ✓ | ✓ |
-| Online wallpapers: live videos (Pixabay) | Thumbnails only | ✓ |
+| Live wallpapers (built-in and online videos) | The first built-in one | ✓ |
 | Stats dashboard | Today | 7 and 30 days, plus the Monday email |
 | Automatic sync | Manual save and restore only | Everything, automatically (`/sync`) |
 | Habits | 3 | 30 |
 | Focus timer | ✓ | ✓ |
 | Google Calendar agenda | – | ✓ |
 | AI day planner | – | ✓ (one assistant message per plan) |
-| Assistant messages a day | `AI_DAILY_LIMIT_FREE` | `AI_DAILY_LIMIT_PRO` |
+| Assistant messages a day | `AI_DAILY_LIMIT` | `AI_DAILY_LIMIT` |
 
 Change the free limits on the extension side in `PRO_CONFIG` (`extension/config.js`).

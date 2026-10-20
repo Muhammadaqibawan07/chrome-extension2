@@ -1,12 +1,12 @@
 import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
-import { isPro } from "./tokens.js";
 
 /* days are counted in UTC */
 const today = () => new Date(new Date().toISOString().slice(0, 10));
 
-export function dailyLimit(user) {
-  return env.aiDailyLimit[isPro(user) ? "PRO" : "FREE"];
+/* the assistant is free: one limit for every account */
+export function dailyLimit() {
+  return env.aiDailyLimit;
 }
 
 export async function getAiUsage(user) {
@@ -14,14 +14,14 @@ export async function getAiUsage(user) {
     where: { userId_day: { userId: user.id, day: today() } },
   });
   const used = row ? row.aiMessages : 0;
-  const limit = dailyLimit(user);
+  const limit = dailyLimit();
   return { used, limit, remaining: Math.max(0, limit - used) };
 }
 
 /* Atomically claims one message. Returns false when the limit is reached.
    The conditional update prevents two parallel requests from both passing. */
 export async function claimAiMessage(user) {
-  const limit = dailyLimit(user);
+  const limit = dailyLimit();
   const key = { userId: user.id, day: today() };
   await prisma.usage.upsert({ where: { userId_day: key }, create: key, update: {} });
   const { count } = await prisma.usage.updateMany({

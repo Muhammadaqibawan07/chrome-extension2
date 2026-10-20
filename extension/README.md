@@ -10,16 +10,12 @@ A calm, editorial New Tab page with cinematic live video wallpapers.
 5. Open a new tab.
 
 ## Replace the wallpapers
-Drop your own videos into `wallpapers/`, keeping the filenames:
-
-```
-wallpapers/wallpaper-1.mp4
-wallpapers/wallpaper-2.mp4
-wallpapers/wallpaper-3.mp4
-```
-
-Nothing else to change. To add a 4th wallpaper, add one line to `WALLPAPERS` in `config.js`.
-(The bundled videos are lightweight placeholders — replace them with your own 1080p/4K clips.)
+The built-in live wallpapers aren't packed into the extension (that made it
+400+ MB). The backend lists them (`GET /wallpapers/builtin`) and they stream
+from the backend (`backend/public/wallpapers/`), kept on disk after the first play
+(`builtins.js`, `app.js`). To add or swap one, upload the video and edit
+`BUILTIN` in `backend/src/routes/wallpapers.routes.js` (file in `backend/public/wallpapers/`) — no new extension
+version needed.
 
 ## Customize (in the page)
 Open the **Customize** panel from the palette icon on the left rail, the
@@ -243,7 +239,8 @@ first in **All**.
 Files are shown straight from Wallhaven and Pixabay, never copied or
 re-hosted. The pick is saved in `settings.background.online` (mode
 `online`).
-The bundled wallpapers in `config.js` stay free.
+4K stills are free for everyone; live wallpapers (built-in and online
+videos) are Atlas Pro, except the first built-in one.
 
 ## Daily quote
 A quote above the search bar (`quote.js`) from a built-in list (Motivation,

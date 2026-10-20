@@ -1146,8 +1146,10 @@
   const openUrl = (url) => (hasTabs ? chrome.tabs.create({ url }) : window.open(url, "_blank", "noopener"));
 
   /* `leave` runs before FAQs / Changelog open here (Customize closes) */
-  const CREDIT = { name: "Muhammad Aqib", url: "https://muhammadaqibawan.netlify.app/" };
-  const ARROW = '<path d="M8 16 16 8M9.5 8H16v6.5"/>';
+  const CREDITS = [
+    { name: "Muhammad Aqib", url: "https://muhammadaqibawan.netlify.app/" },
+    { name: "Syed Taha", url: "https://tahadevs.netlify.app/" },
+  ];
   function footer(leave) {
     const go = (v) => { if (typeof leave === "function") leave(); open(v); };
     const status = h("p", { class: "qt-foot-status", role: "status" });
@@ -1189,10 +1191,12 @@
           AS.exportSettings();
           say("Backup saved to your downloads.");
         }) : null),
-      h("a", { class: "qt-foot-credit", href: CREDIT.url, target: "_blank", rel: "noopener" },
-        h("span", { text: "Built by" }),
-        h("strong", { text: CREDIT.name }),
-        h("span", { class: "qt-foot-credit-go", html: svg(ARROW, 12) })),
+      h("p", { class: "qt-foot-credit" },
+        "Built by ",
+        CREDITS.flatMap((c, i) => [
+          i ? h("span", { class: "qt-foot-credit-amp", text: " & " }) : null,
+          h("a", { class: "qt-foot-credit-who", href: c.url, target: "_blank", rel: "noopener", text: c.name }),
+        ])),
       status);
   }
 
@@ -1203,7 +1207,7 @@
     ["Why doesn't the site blocker block a site?", "Check that “Block these sites” is on, and, with “Only at certain times”, that it's inside those times. A running break lifts it for 5 minutes."],
     ["The assistant won't hear me.", "Allow the microphone for Atlas when Chrome asks. If it was blocked, the assistant offers an “Allow microphone” button."],
     ["How do I back up everything?", "With Atlas Pro: Export Backup (below) saves your settings to a file; Customize → Backup imports it again."],
-    ["What does Pro add?", "Every theme and cursor, unlimited online and live 4K wallpapers (free accounts get 5), the private space, backup, more habits and saved sessions, 30 days of stats with a weekly email, sync, the AI day planner and calendar."],
+    ["What does Pro add?", "Every cursor, all live wallpapers (every theme, the assistant, the Language tab and 4K still wallpapers are free for everyone), the private space, backup, more habits and saved sessions, 30 days of stats with a weekly email, sync, the AI day planner and calendar."],
     ["Is there a free trial?", "Yes — sign in with Google and a new account gets every Pro feature free for 7 days. After that, subscribe in Customize → Account to keep them."],
   ].filter(([q]) => !(window.AtlasAccount && AtlasAccount.allFree && /Pro/.test(q))); // no plans to explain while all is free
   function renderFaq() {
@@ -1214,7 +1218,12 @@
 
   /* newest first: [version, date, changes] */
   const CHANGELOG = [
-    [manifest.version, "Sep 2026", [
+    [manifest.version, "Oct 2026", [
+      "Every theme, the assistant and the Language tab are now free for everyone",
+      "Every 4K still wallpaper is free; live wallpapers are part of Atlas Pro",
+      "A much smaller download: built-in wallpapers now stream and are kept on disk",
+    ]],
+    ["1.0.2", "Sep 2026", [
       "Tab manager: save a window's tabs as a named session and open it again",
       "Extensions: turn your other extensions on and off",
       "A private folder, like a phone's hidden one, with its own shortcuts and notes",

@@ -4,19 +4,14 @@
    ============================================================ */
 
 /* ---------- 1. WALLPAPERS -------------------------------------
-   Drop your own .mp4 files into  extension/wallpapers/
-   Keep the same filenames and nothing else needs to change.
-   To add more wallpapers, just append an entry to this list.
-   These are free for everyone. The online library (Wallhaven stills,
-   Pixabay live videos) is in library.js. */
-const WALLPAPERS = [
-  { id: "w1", label: "Wallpaper 01", file: "wallpapers/wallpaper-1.mp4" },
-  { id: "w2", label: "Wallpaper 02", file: "wallpapers/wallpaper-2.mp4" },
-  { id: "w3", label: "Wallpaper 03", file: "wallpapers/wallpaper-3.mp4" },
-  { id: "w4", label: "Wallpaper 04", file: "wallpapers/wallpaper-4.mp4" },
-  { id: "w5", label: "Wallpaper 05", file: "wallpapers/wallpaper-5.mp4" },
-  { id: "w6", label: "Wallpaper 06", file: "wallpapers/wallpaper-6.mp4" },
-];
+   The built-in live wallpapers come from the backend
+   (GET /wallpapers/builtin), not from files in the extension, which kept
+   it small. builtins.js fills this list in place: [{ id, label, file }].
+   To add or change one, edit BUILTIN in
+   backend/src/routes/wallpapers.routes.js and upload its video.
+   The online library (Wallhaven stills, Pixabay live videos) is in
+   library.js. */
+const WALLPAPERS = [];
 
 /* ---------- 2. ICONS ------------------------------------------
    Every icon file lives in  extension/assets/icons/
@@ -216,14 +211,13 @@ const ACCOUNT_CONFIG = {
                   (1 = today only; Pro sees 30 days and the weekly email)
    freeSessions:  tab sessions a free account can save (Quick tools →
                   Tab manager)
-   freeWallpapers: wallpapers a free account can choose — built-in, online
-                  stills and live together (the first built-in one is
-                  always free and doesn't count).
-                  Also Pro: every theme preset but the first, customizing
-                  the theme (colours, glass, font), every cursor but
-                  System, the site blocker, the private space (Privacy
-                  tab), voice typing and the assistant's voice, and backup
-                  (pro.js). New accounts get Pro free for TRIAL_DAYS
+   freeWallpapers: live wallpapers (built-in and online videos) a free
+                  account can choose; 0 = live is Pro. 4K stills are
+                  always free, and so is the first built-in one.
+                  Free for everyone: every theme, the assistant and the
+                  Language tab (translation, voice typing, its voice).
+                  Also Pro: every cursor but System, the site blocker, the
+                  private space (Privacy tab) and backup (pro.js). New accounts get Pro free for TRIAL_DAYS
                   (backend .env); after that these need a subscription.
    allFree:       only the guess before the backend first answers. The real
                   switch is ALL_FREE in the backend's .env (read through
@@ -234,7 +228,7 @@ const PRO_CONFIG = {
   freeHabits: 3,
   freeStatsDays: 1,
   freeSessions: 3,
-  freeWallpapers: 5,
+  freeWallpapers: 0,
   /* shown on the upgrade box until the server answers with Paddle's real
      prices (GET /billing/plans); keep them in step with Paddle */
   prices: {
@@ -253,7 +247,7 @@ const ABOUT_CONFIG = {
   feedbackEmail: "muhammadaqibawan07@gmail.com",
   storeUrl: "",
   siteUrl: "",
-  privacyUrl: "",
+  privacyUrl: "https://atlas.aqibawan.com/privacy",
 };
 
 /* ---------- 6. WEATHER -----------------------------------------

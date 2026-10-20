@@ -556,6 +556,15 @@
   }
   AS.app.setWallpaper = (id) => setWallpaper(id);
 
+  /* the built-in list (builtins.js) came from the server or changed: on a
+     first run there's nothing until it does. Before boot, boot reads it. */
+  let wpBooted = false;
+  if (window.AtlasBuiltIns) AtlasBuiltIns.on(() => {
+    if (!wpBooted) return;
+    if (!WALLPAPERS.some((w) => w.id === currentWp)) currentWp = (WALLPAPERS[0] || {}).id || null;
+    applyBackground(false);
+  });
+
   /* --- wallpaper schedule (Customize > Background > Schedule) -----------
      Each rule says "from this moment, show this wallpaper". The rule whose
      latest occurrence is most recent is in charge — unless the user picked
@@ -2336,10 +2345,6 @@
      you say fills the field as you speak; when you stop, it searches
      (or waits for Enter, if "Search when I stop talking" is off). --- */
   const Voice = window.AtlasVoice;
-  /* voice typing and spoken answers are part of Atlas Pro: a free account
-     gets the upgrade box (pro.js) instead */
-  const voicePro = () => !!window.AtlasPro && AtlasPro.need("Voice typing and the assistant's voice are part of Atlas Pro.");
-  const voiceAllowed = () => !window.AtlasPro || AtlasPro.isPro();
   const searchMic = $("searchMic");
   let searchRec = null;
 
@@ -2363,7 +2368,7 @@
   }
   function searchByVoice() {
     if (searchRec) return searchRec.stop();
-    if (!Voice || voicePro()) return;
+    if (!Voice) return;
     const before = qEl.value;
     searchMic.classList.add("is-live");
     searchMic.setAttribute("aria-pressed", "true");
@@ -2737,7 +2742,7 @@
       say.title = "Read out loud";
       say.setAttribute("aria-label", "Read out loud");
       say.innerHTML = SPEAK_SVG;
-      say.addEventListener("click", () => (speakingBtn === say ? stopSpeaking() : voicePro() ? null : sayReply(text, say)));
+      say.addEventListener("click", () => (speakingBtn === say ? stopSpeaking() : sayReply(text, say)));
       const meta = document.createElement("span");
       meta.className = "msg-meta";
       meta.append(t, say);
@@ -2845,7 +2850,6 @@
   /* voice typing into the box; in talk mode it sends by itself */
   function listenChat() {
     if (chatRec || !Voice || !Voice.canListen) return;
-    if (voicePro()) { if (talk) setTalk(false); return; }
     stopSpeaking();
     const before = talk ? "" : aiInput.value.trim();
     const put = (t) => {
@@ -2879,7 +2883,6 @@
 
   /* talk mode: listen → send → speak the answer → listen again */
   function setTalk(on) {
-    if (on && voicePro()) return;
     talk = on;
     aiTalk.classList.toggle("is-on", on);
     aiTalk.setAttribute("aria-pressed", String(on));
@@ -2897,7 +2900,7 @@
   /* after an answer: read it out if asked to, then carry on talking */
   function afterReply(reply, sayBtn) {
     const ai = AS.get().language.ai;
-    if ((talk || ai.speak) && Voice && Voice.canSpeak && voiceAllowed()) {
+    if ((talk || ai.speak) && Voice && Voice.canSpeak) {
       sayReply(reply, sayBtn).then((finished) => { if (talk && finished) listenChat(); });
     } else if (talk) listenChat();
   }
@@ -2955,7 +2958,6 @@
       sw.className = "cz-switch";
       sw.checked = L.ai.speak;
       sw.addEventListener("change", () => {
-        if (sw.checked && voicePro()) { sw.checked = false; return; }
         AS.set("language.ai.speak", sw.checked);
         if (!sw.checked) stopSpeaking();
       });
@@ -4163,6 +4165,7 @@
     AS.ready,
     V ? V.ready : null,
     window.AtlasLibrary ? AtlasLibrary.ready : null,
+    window.AtlasBuiltIns ? AtlasBuiltIns.ready : null,
   ]).then(([s]) => {
     /* the saved layout replaces the config.js defaults; a first launch, or
        anything unreadable, falls back to them */
@@ -4178,7 +4181,10 @@
     syncSearchLabel();
     syncVoiceUi();
     syncClockHeight();
-    currentWp = (WALLPAPERS.find((w) => w.id === s.wallpaper) || WALLPAPERS[0] || {}).id || null;
+    /* no list yet (first run after the update): keep the saved id for when
+       it comes */
+    currentWp = (WALLPAPERS.find((w) => w.id === s.wallpaper) || WALLPAPERS[0] || {}).id || s.wallpaper || null;
+    wpBooted = true;
     wpManualAt = Number(s[WP_MANUAL_KEY]) || 0;
     /* a scheduled wallpaper is the one the page opens with — no crossfade */
     const due = scheduledWallpaper(Date.now());
