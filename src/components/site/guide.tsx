@@ -79,7 +79,7 @@ export function GuideFaq({ items }: { items: Faq }) {
       <h2 id="faq-h">Frequently asked questions</h2>
       <div className="faq">
         {items.map(([q, a]) => (
-          <details key={q}>
+          <details key={q} name="guide-faq">
             <summary>{q}</summary>
             <p>{a}</p>
           </details>

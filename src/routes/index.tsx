@@ -4,6 +4,7 @@ import { AnimeLovers } from "@/components/site/anime";
 import { Contact, Reviews } from "@/components/site/connect";
 import { Developers } from "@/components/site/developers";
 import { Footer, InstallButton, Nav, Reveal, useTheme } from "@/components/site/layout";
+import { Intro } from "@/components/site/intro";
 import {
   AppIcon,
   Card,
@@ -105,6 +106,7 @@ export const Route = createFileRoute("/")({
 function Home() {
   return (
     <div className="site">
+      <Intro />
       <Nav />
       <Hero />
       <WallStrip />
@@ -820,7 +822,7 @@ function Faq() {
         <div className="faq">
           {FAQ.map(([q, a], i) => (
             <Reveal key={q} delay={i * 40}>
-              <details>
+              <details name="faq">
                 <summary>{q}</summary>
                 <p>{a}</p>
               </details>
