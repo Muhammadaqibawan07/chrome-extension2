@@ -70,8 +70,8 @@ const DEVELOPERS: Developer[] = [
     ],
   },
   {
-    name: "Syed Taha",
-    initials: "ST",
+    name: "Muhammad Taha",
+    initials: "MT",
     roles: ["Junior Frontend Developer", "AR Developer", "AI & prompt specialist", "2D game developer", "Editor & creative designer"],
     location: "Karachi, Pakistan",
     status: "Building & learning",
@@ -338,9 +338,24 @@ function Carousel() {
   const n = DEVELOPERS.length;
   useEffect(() => {
     if (!track) return;
-    const on = () => setAt(Math.round(track.scrollLeft / track.clientWidth));
+    /* each slide gets --p: its offset from centre in slide widths (-1 left, 0 centre, 1 right),
+       which the CSS turns into the swing/fade between profiles */
+    const on = () => {
+      const w = track.clientWidth;
+      setAt(Math.round(track.scrollLeft / w));
+      for (const s of Array.from(track.children) as HTMLElement[]) {
+        const p = Math.max(-1, Math.min(1, (s.offsetLeft - track.scrollLeft) / w));
+        s.style.setProperty("--p", p.toFixed(3));
+        s.style.setProperty("--ap", Math.abs(p).toFixed(3));
+      }
+    };
+    on();
     track.addEventListener("scroll", on, { passive: true });
-    return () => track.removeEventListener("scroll", on);
+    window.addEventListener("resize", on);
+    return () => {
+      track.removeEventListener("scroll", on);
+      window.removeEventListener("resize", on);
+    };
   }, [track]);
   const go = (k: number) => {
     if (!track) return;

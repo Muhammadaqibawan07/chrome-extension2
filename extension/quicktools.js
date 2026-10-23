@@ -1148,7 +1148,7 @@
   /* `leave` runs before FAQs / Changelog open here (Customize closes) */
   const CREDITS = [
     { name: "Muhammad Aqib", url: "https://muhammadaqibawan.netlify.app/" },
-    { name: "Syed Taha", url: "https://tahadevs.netlify.app/" },
+    { name: "Muhammad Taha", url: "https://tahadevs.netlify.app/" },
   ];
   function footer(leave) {
     const go = (v) => { if (typeof leave === "function") leave(); open(v); };
