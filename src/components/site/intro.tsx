@@ -7,6 +7,9 @@ import { useLayoutEffect, useRef, useState } from "react";
 const SPEED = 1.2; // 1 = as authored, 1.5 = faster, 0.8 = slower
 const PLAY_ONCE = true; // only once per browser session
 const SEEN_KEY = "atlas-intro";
+/* if the page takes longer than this to hydrate, the CSS fallback in site.css has already
+   faded the overlay out, so don't bring it back (keep in sync with intro-bail's delay) */
+const LATE_MS = 2500;
 
 /* runs before hydration so a visitor who already saw it never gets a flash of the overlay */
 const HIDE_IF_SEEN = PLAY_ONCE
@@ -47,7 +50,8 @@ export function Intro() {
     } catch {
       /* storage blocked: just play it */
     }
-    if (seen) {
+    if (seen || performance.now() > LATE_MS) {
+      intro.classList.add("leaving", "done");
       setGone(true);
       return;
     }
@@ -198,6 +202,8 @@ export function Intro() {
     html.classList.add("intro-on");
 
     tracks.forEach((k) => k.fn(0));
+    /* every stroke is now reset to undrawn, so the stage can be revealed without a flash */
+    intro.classList.add("ready");
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       /* reduced motion: show the finished logo, then fade */
       tracks.forEach((k) => k.fn(1));

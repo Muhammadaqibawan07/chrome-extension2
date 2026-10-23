@@ -1287,6 +1287,11 @@ html.intro-on, html.intro-on body { overflow: hidden; }
 }
 .intro.leaving { opacity: 0; pointer-events: none; }
 .intro.done { visibility: hidden; }
+/* the server-rendered SVG has every stroke fully drawn; keep it hidden until intro.tsx has reset
+   the strokes, and if the JS never gets there, fade the overlay away instead of leaving it stuck */
+.intro:not(.ready) .intro-stage { visibility: hidden; }
+.intro:not(.ready) { animation: intro-bail 500ms ease 2500ms forwards; }
+@keyframes intro-bail { to { opacity: 0; visibility: hidden; pointer-events: none; } }
 /* faint blueprint grid, fades in while the box is drafted */
 .intro-grid {
   position: absolute; inset: 0; opacity: 0;
