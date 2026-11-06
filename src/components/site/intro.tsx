@@ -4,7 +4,8 @@
    Click or press a key to skip. Reduced motion gets a short fade instead. */
 import { useLayoutEffect, useRef, useState } from "react";
 
-const SPEED = 1.2; // 1 = as authored, 1.5 = faster, 0.8 = slower
+/* 2 plays the 8.3s timeline in about 4s, so the page isn't covered for long */
+const SPEED = 2; // 1 = as authored, 1.5 = faster, 0.8 = slower
 const PLAY_ONCE = true; // only once per browser session
 const SEEN_KEY = "atlas-intro";
 /* if the page takes longer than this to hydrate, the CSS fallback in site.css has already

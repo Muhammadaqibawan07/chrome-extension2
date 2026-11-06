@@ -7,6 +7,7 @@ import { Footer, InstallButton, Nav, Reveal, useTheme } from "@/components/site/
 import { Intro } from "@/components/site/intro";
 import {
   AppIcon,
+  appAlt,
   Card,
   CardCopy,
   CalendarMock,
@@ -35,6 +36,7 @@ import {
   ZenMock,
   hm,
   useCycle,
+  useLazyPlay,
   useNow,
   useTyped,
 } from "@/components/site/showcase";
@@ -95,7 +97,11 @@ const STRUCTURED_DATA = [
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    ...(({ meta, links }) => ({ meta: [...meta, { name: "keywords", content: KEYWORDS }], links }))(
+    ...(({ meta, links }) => ({
+      meta: [...meta, { name: "keywords", content: KEYWORDS }],
+      /* the hero poster is the largest thing above the fold: fetch it first */
+      links: [...links, { rel: "preload", as: "image", href: "/media/hero.jpg", fetchPriority: "high" }],
+    }))(
       seo({ path: "/", title: TITLE, description: DESCRIPTION }),
     ),
     scripts: [{ type: "application/ld+json", children: JSON.stringify([...STRUCTURED_DATA, FAQ_DATA]) }],
@@ -132,15 +138,8 @@ function Home() {
 /* a muted looping video that only plays while on screen */
 function Loop({ src, poster, className = "" }: { src: string; poster?: string; className?: string }) {
   const ref = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const v = ref.current;
-    if (!v) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const io = new IntersectionObserver(([e]) => (e.isIntersecting ? v.play().catch(() => {}) : v.pause()));
-    io.observe(v);
-    return () => io.disconnect();
-  }, [src]);
-  return <video ref={ref} className={className} src={src} poster={poster} muted loop playsInline preload="metadata" />;
+  useLazyPlay(ref, [src]);
+  return <video ref={ref} className={className} src={src} poster={poster} muted loop playsInline preload="none" />;
 }
 
 /* ---------- hero ---------- */
@@ -922,12 +921,22 @@ function Closing() {
   const [hovered, setHovered] = useState<number | null>(null);
   const on = hovered ?? top;
   const app = ORBIT[on] ?? ORBIT[0]!;
+  /* the wallpapers behind the ring only download once the section is close */
+  const secRef = useRef<HTMLElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = secRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && (setNear(true), io.disconnect()), { rootMargin: "600px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
-    <section className="closing" style={{ "--c1": app.c[0], "--c2": app.c[1] } as CSSProperties}>
+    <section ref={secRef} className="closing" style={{ "--c1": app.c[0], "--c2": app.c[1] } as CSSProperties}>
       {/* a slow aurora over a fading grid, tinted by the app on top of the ring */}
       <div className="closing-bg" aria-hidden="true">
         {ORBIT.map((o, k) => (
-          <span key={o.n} className={"closing-wall" + (k === on ? " on" : "")} style={{ backgroundImage: `url(/media/wp/${o.wall}.jpg)` }} />
+          <span key={o.n} className={"closing-wall" + (k === on ? " on" : "")} style={near ? { backgroundImage: `url(/media/wp/${o.wall}.jpg)` } : undefined} />
         ))}
         <i />
         <i />
@@ -936,7 +945,7 @@ function Closing() {
       </div>
       <div className="wrap closing-inner">
         <Reveal className="closing-copy">
-          <img src="/media/icon.png" alt="" className="closing-logo" width={84} height={84} />
+          <img src="/media/icon.png" alt="Atlas new tab extension logo" className="closing-logo" width={84} height={84} loading="lazy" decoding="async" />
           <h2 className="display small">
             Open a new tab.
             <br />
@@ -990,7 +999,7 @@ function Closing() {
                 <Icon d={I.bell} size={13} /> Stand up and stretch
               </div>
               <div className="cu-now" key={app.n}>
-                <img src={`/media/apps/${app.n}.svg`} alt="" />
+                <img src={`/media/apps/${app.n}.svg`} alt={appAlt(app.n)} loading="lazy" decoding="async" />
                 <span>{app.label}</span>
                 <small>circle the ring to spin</small>
               </div>
