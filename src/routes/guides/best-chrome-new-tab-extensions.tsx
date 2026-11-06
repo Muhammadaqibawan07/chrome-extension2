@@ -32,7 +32,7 @@ export const Route = createFileRoute("/guides/best-chrome-new-tab-extensions")({
   head: () =>
     guideHead({
       path: PATH,
-      title: "Best Chrome New Tab Extensions | Atlas",
+      title: "Best Chrome New Tab Extensions: What to Compare | Atlas",
       description:
         "Discover Chrome new tab extensions for customization, productivity, shortcuts, and beautiful wallpapers. Explore what Atlas offers.",
       heading: HEADING,

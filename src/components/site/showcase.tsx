@@ -468,7 +468,7 @@ export function SearchMock() {
     <div className="srch">
       <div className="srch-bar glass-solid">
         <span className="srch-eng" key={n}>
-          <img src={`/media/apps/${n}.svg`} alt={appAlt(n)} loading="lazy" decoding="async" />
+          <img src={`/media/apps/${n}.svg`} alt={appAlt(n)} width={18} height={18} loading="lazy" decoding="async" />
         </span>
         <span className="srch-q" key={q}>
           <em>{bang}</em> {q}
@@ -480,7 +480,7 @@ export function SearchMock() {
       <div className="srch-chips">
         {ENGINES.map(([e, l], k) => (
           <button type="button" key={e} className={k === i ? "on" : ""} aria-pressed={k === i} onClick={() => pick(k)}>
-            <img src={`/media/apps/${e}.svg`} alt={appAlt(e)} loading="lazy" decoding="async" />
+            <img src={`/media/apps/${e}.svg`} alt={appAlt(e)} width={16} height={16} loading="lazy" decoding="async" />
             {l}
           </button>
         ))}
@@ -676,7 +676,7 @@ export function StatsMock() {
           ["youtube", "youtube.com", "1h 48m"],
         ].map(([n, d, t]) => (
           <li key={d}>
-            <img src={`/media/apps/${n}.svg`} alt={appAlt(n)} loading="lazy" decoding="async" />
+            <img src={`/media/apps/${n}.svg`} alt={appAlt(n)} width={16} height={16} loading="lazy" decoding="async" />
             {d}
             <small>{t}</small>
           </li>
@@ -701,7 +701,7 @@ export function PlannerMock() {
           <small>{t}</small>
           <span>
             {l}
-            {ic && <img src={`/media/apps/${ic}.svg`} alt={appAlt(ic)} loading="lazy" decoding="async" />}
+            {ic && <img src={`/media/apps/${ic}.svg`} alt={appAlt(ic)} width={14} height={14} loading="lazy" decoding="async" />}
           </span>
           {i === 0 && (
             <button type="button" className={"tl-btn" + (started ? " is-on" : "")} onClick={() => setStarted((s) => !s)}>
@@ -720,7 +720,7 @@ export function BlockMock() {
   return (
     <div className="block">
       <div className="block-url glass-solid">
-        <img src="/media/apps/reddit.svg" alt="Reddit logo" loading="lazy" decoding="async" />
+        <img src="/media/apps/reddit.svg" alt="Reddit logo" width={16} height={16} loading="lazy" decoding="async" />
         <span>reddit.com/r/all</span>
       </div>
       <div className="block-page">
@@ -757,7 +757,7 @@ export function TabsMock() {
     <div className="tabs">
       {tabs.map(([n, t, s], i) => (
         <div className={"tabrow " + s} key={i} style={{ "--d": i * 90 + "ms" } as CSSProperties}>
-          <img src={`/media/apps/${n}.svg`} alt={appAlt(n)} loading="lazy" decoding="async" />
+          <img src={`/media/apps/${n}.svg`} alt={appAlt(n)} width={16} height={16} loading="lazy" decoding="async" />
           <span>{t}</span>
           {s === "zz" && <em>Asleep</em>}
           {s === "playing" && <em className="live">Playing</em>}
@@ -803,7 +803,7 @@ export function TranslateMock() {
   return (
     <div className="tr">
       <div className="tr-badge glass-solid">
-        <img src="/media/apps/translate.svg" alt="Google Translate logo" loading="lazy" decoding="async" />
+        <img src="/media/apps/translate.svg" alt="Google Translate logo" width={22} height={22} loading="lazy" decoding="async" />
         <button type="button" className="tr-lang" key={i} onClick={() => pick((i + 1) % HELLO.length)} title="Next language">
           {HELLO[i][0]}
         </button>
@@ -870,7 +870,7 @@ export function CalendarMock() {
           </span>
           {meet && (
             <a className="ag-join" href="https://meet.google.com" target="_blank" rel="noopener noreferrer">
-              <img src="/media/apps/meet.svg" alt="Google Meet logo" loading="lazy" decoding="async" /> Join
+              <img src="/media/apps/meet.svg" alt="Google Meet logo" width={14} height={14} loading="lazy" decoding="async" /> Join
             </a>
           )}
         </div>
@@ -929,7 +929,7 @@ export function SyncMock() {
         <i />
       </span>
       <span className="dev hub">
-        <img src="/media/icon.png" alt="Atlas logo" loading="lazy" decoding="async" />
+        <img src="/media/icon.png" alt="Atlas logo" width={52} height={52} loading="lazy" decoding="async" />
       </span>
       <span className="wire">
         <i />

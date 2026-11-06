@@ -1,15 +1,32 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Mark } from "@/components/site/layout";
-import { API_URL } from "@/lib/site";
+import { API_URL, SITE_URL } from "@/lib/site";
 
 /* Paddle's "default payment link" points here. Paddle adds ?_ptxn=txn_...
    (made by the backend's POST /billing/checkout) and Paddle.js opens that
    checkout inline, in .checkout-container. */
 export const Route = createFileRoute("/checkout")({
   head: () => ({
-    meta: [{ title: "Checkout — Atlas Pro" }, { name: "robots", content: "noindex, nofollow" }],
-    scripts: [{ src: "https://cdn.paddle.com/paddle/v2/paddle.js" }],
+    meta: [
+      { title: "Checkout: Upgrade to Atlas Pro for Your Chrome New Tab" },
+      { name: "description", content: "Secure checkout for Atlas Pro, handled by Paddle." },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+    scripts: [
+      { src: "https://cdn.paddle.com/paddle/v2/paddle.js" },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "@id": SITE_URL + "/checkout",
+          url: SITE_URL + "/checkout",
+          name: "Checkout: Upgrade to Atlas Pro for Your Chrome New Tab",
+          isPartOf: { "@type": "WebSite", name: "Atlas", url: SITE_URL },
+        }),
+      },
+    ],
   }),
   component: Checkout,
 });

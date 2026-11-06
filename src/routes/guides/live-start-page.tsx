@@ -28,7 +28,7 @@ export const Route = createFileRoute("/guides/live-start-page")({
   head: () =>
     guideHead({
       path: PATH,
-      title: "Live Start Page for Chrome: Polished and Useful Choices | Atlas",
+      title: "Live Start Page for Chrome: Polished, Useful Picks | Atlas",
       description:
         "What a Live Start Page should do in Chrome, which features to compare before you install, and how to keep a live wallpaper new tab fast and readable.",
       heading: HEADING,

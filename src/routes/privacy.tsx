@@ -4,7 +4,7 @@ import { seo } from "@/lib/seo";
 import { CONTACT_EMAIL } from "@/lib/site";
 
 export const Route = createFileRoute("/privacy")({
-  head: () => seo({ path: "/privacy", title: "Privacy policy — Atlas New Tab", description: "What Atlas New Tab stores, what it sends and to whom." }),
+  head: () => seo({ path: "/privacy", title: "Privacy Policy | Atlas New Tab Extension for Chrome", description: "What the Atlas New Tab Chrome extension stores on your computer, what it sends to our servers and to whom, and how to delete your data." }),
   component: Privacy,
 });
 

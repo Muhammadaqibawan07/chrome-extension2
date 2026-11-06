@@ -4,7 +4,7 @@ import { seo } from "@/lib/seo";
 import { CONTACT_EMAIL } from "@/lib/site";
 
 export const Route = createFileRoute("/terms")({
-  head: () => seo({ path: "/terms", title: "Terms of service — Atlas New Tab", description: "The terms for using Atlas New Tab, the Chrome extension, and the Atlas Pro subscription." }),
+  head: () => seo({ path: "/terms", title: "Terms of Service | Atlas New Tab Extension for Chrome", description: "The terms for using Atlas New Tab, the Chrome extension, and the Atlas Pro subscription." }),
   component: Terms,
 });
 

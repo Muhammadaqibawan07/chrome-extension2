@@ -53,7 +53,7 @@ export const Route = createFileRoute("/guides/best-chrome-wallpaper-extensions")
   head: () =>
     guideHead({
       path: PATH,
-      title: "Best Chrome Wallpaper Extensions | Atlas",
+      title: "Best Chrome Wallpaper Extensions for Your New Tab | Atlas",
       description:
         "Find Chrome wallpaper extensions that make your new tab more personal with beautiful backgrounds, customization options, and useful features.",
       heading: HEADING,

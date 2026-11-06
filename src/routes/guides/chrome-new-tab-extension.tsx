@@ -30,7 +30,7 @@ export const Route = createFileRoute("/guides/chrome-new-tab-extension")({
       path: PATH,
       title: "Chrome New Tab Extension: How to Pick the Right One | Atlas",
       description:
-        "How to choose a Chrome new tab extension: what to look for, how to match features to your day, and a quick table for comparing extensions before you install.",
+        "How to choose a Chrome new tab extension: what to look for, how to match features to your day, and a quick way to compare extensions before you install.",
       heading: HEADING,
       image: "/media/guides/customize-theme.jpg",
       imageAlt: "Atlas Chrome new tab extension with glass shortcut cards and the Customize panel open on the Theme tab",
