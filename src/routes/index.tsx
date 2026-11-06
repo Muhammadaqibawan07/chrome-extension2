@@ -45,7 +45,7 @@ import { CONTACT_EMAIL, FALLBACK_PRICES, SITE_URL, THEMES, fetchPlans, money } f
 
 /* search engines read these first: the title and description carry the
    phrases people search for (wallpaper extension, new tab, productivity) */
-const TITLE = "Atlas — Free Live Wallpaper & Productivity New Tab for Chrome";
+const TITLE = "Atlas: Free Live Wallpaper New Tab Extension for Chrome";
 const DESCRIPTION =
   "Atlas is a free Chrome new tab extension with live 4K & HD wallpapers, a custom productivity dashboard, focus timer, shortcuts and a minimal mode.";
 const KEYWORDS = [
@@ -211,7 +211,7 @@ function WallTile({ id, name }: { id: string; name: string }) {
   const [hover, setHover] = useState(false);
   return (
     <figure className="wall" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-      <img src={`/media/wp/${id}.jpg`} alt={`${name} — live 4K wallpaper for the Chrome new tab`} loading="lazy" />
+      <img src={`/media/wp/${id}.jpg`} alt={`${name} — live 4K wallpaper for the Chrome new tab`} width={800} height={450} loading="lazy" decoding="async" />
       {hover && <video src={`/media/wp/${id}.mp4`} muted loop playsInline autoPlay />}
       <figcaption>
         <span className="live-dot" />
@@ -999,7 +999,7 @@ function Closing() {
                 <Icon d={I.bell} size={13} /> Stand up and stretch
               </div>
               <div className="cu-now" key={app.n}>
-                <img src={`/media/apps/${app.n}.svg`} alt={appAlt(app.n)} loading="lazy" decoding="async" />
+                <img src={`/media/apps/${app.n}.svg`} alt={appAlt(app.n)} width={18} height={18} loading="lazy" decoding="async" />
                 <span>{app.label}</span>
                 <small>circle the ring to spin</small>
               </div>

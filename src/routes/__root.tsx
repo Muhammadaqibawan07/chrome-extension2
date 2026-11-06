@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "theme-color", content: "#0b0b0d" },
       { name: "google-site-verification", content: "F5emA-HO_ZMFNkiZ5HCA4ypPnnzsWIGmSAKiG0AxCwM" },
-      { title: "Atlas — a new tab worth opening" },
+      { title: "Atlas — Free Live Wallpaper New Tab Extension for Chrome" },
       { name: "description", content: "Live wallpapers, shortcuts in glass cards, workspaces and quick tools for Chrome's new tab." },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Atlas" },

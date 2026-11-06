@@ -362,7 +362,7 @@ function SpotMedia({ item, onStatus }: { item: AnimeItem; onStatus: (id: string,
 
   return (
     <div className="spot-media">
-      <img className="spot-poster" src={item.poster} alt={(item.title || "Anime wallpaper") + " preview"} referrerPolicy="no-referrer" />
+      <img className="spot-poster" src={item.poster} alt={(item.title || "Anime wallpaper") + " preview"} width={1920} height={1080} referrerPolicy="no-referrer" />
       {status !== "failed" &&
         (live ? (
           <video
@@ -383,6 +383,8 @@ function SpotMedia({ item, onStatus }: { item: AnimeItem; onStatus: (id: string,
             className={"spot-full" + (status === "ready" ? " on" : "")}
             src={src}
             alt={(item.title || "Anime wallpaper") + " — 4K anime wallpaper"}
+            width={3840}
+            height={2160}
             referrerPolicy="no-referrer"
             decoding="async"
             fetchPriority="high"
@@ -430,7 +432,7 @@ function WallCard({ it, k, on, dim, onPick }: { it: AnimeItem; k: number; on: bo
       aria-pressed={on}
     >
       <span className="holo-in">
-        <img src={it.thumb} alt={(it.title || "Anime wallpaper") + " thumbnail"} referrerPolicy="no-referrer" loading="lazy" decoding="async" />
+        <img src={it.thumb} alt={(it.title || "Anime wallpaper") + " thumbnail"} width={640} height={360} referrerPolicy="no-referrer" loading="lazy" decoding="async" />
         {hover && it.kind === "live" && <video src={clipSrc(it.media)} muted loop playsInline autoPlay />}
         <span className="holo-foil" />
         <span className="holo-badge">

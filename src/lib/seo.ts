@@ -17,10 +17,39 @@ type SeoInput = {
   imageHeight?: number;
 };
 
+/* WebPage + BreadcrumbList structured data for a plain page. Pages with richer data
+   (home, guides) replace the `scripts` this adds with their own. */
+function pageData(path: string, title: string, description: string, img: string) {
+  const url = SITE_URL + path;
+  const name = title.split(" | ")[0]!;
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": url,
+      url,
+      name: title,
+      description,
+      inLanguage: "en",
+      isPartOf: { "@type": "WebSite", name: SITE_NAME, url: SITE_URL },
+      primaryImageOfPage: { "@type": "ImageObject", url: img },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL + "/" },
+        { "@type": "ListItem", position: 2, name, item: url },
+      ],
+    },
+  ];
+}
+
 export function seo({ path, title, description, image = DEFAULT_IMAGE, imageAlt, imageWidth = 1280, imageHeight = 800 }: SeoInput) {
   const url = SITE_URL + path;
   const img = SITE_URL + image;
   return {
+    scripts: [{ type: "application/ld+json", children: JSON.stringify(pageData(path, title, description, img)) }],
     meta: [
       { title },
       { name: "description", content: description },

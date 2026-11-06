@@ -32,7 +32,7 @@ export const Route = createFileRoute("/features/live-wallpapers")({
   head: () =>
     guideHead({
       path: PATH,
-      title: "Live Wallpaper Chrome Extension | Atlas",
+      title: "Live Wallpaper Chrome Extension for Your New Tab | Atlas",
       description:
         "Explore animated and dynamic backgrounds for your Chrome new tab with Atlas. Learn about wallpaper customization and browser performance.",
       heading: HEADING,
