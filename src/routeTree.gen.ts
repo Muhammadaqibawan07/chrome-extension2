@@ -18,6 +18,9 @@ import { Route as ApiVideoRouteImport } from './routes/api.video'
 import { Route as FeaturesLiveWallpapersRouteImport } from './routes/features/live-wallpapers'
 import { Route as GuidesBestChromeNewTabExtensionsRouteImport } from './routes/guides/best-chrome-new-tab-extensions'
 import { Route as GuidesBestChromeWallpaperExtensionsRouteImport } from './routes/guides/best-chrome-wallpaper-extensions'
+import { Route as GuidesChromeNewTabExtensionRouteImport } from './routes/guides/chrome-new-tab-extension'
+import { Route as GuidesLiveStartPageRouteImport } from './routes/guides/live-start-page'
+import { Route as GuidesNewTabPageRouteImport } from './routes/guides/new-tab-page'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -66,6 +69,22 @@ const GuidesBestChromeWallpaperExtensionsRoute =
     path: '/guides/best-chrome-wallpaper-extensions',
     getParentRoute: () => rootRouteImport,
   } as any)
+const GuidesChromeNewTabExtensionRoute =
+  GuidesChromeNewTabExtensionRouteImport.update({
+    id: '/guides/chrome-new-tab-extension',
+    path: '/guides/chrome-new-tab-extension',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const GuidesLiveStartPageRoute = GuidesLiveStartPageRouteImport.update({
+  id: '/guides/live-start-page',
+  path: '/guides/live-start-page',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuidesNewTabPageRoute = GuidesNewTabPageRouteImport.update({
+  id: '/guides/new-tab-page',
+  path: '/guides/new-tab-page',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -77,6 +96,9 @@ export interface FileRoutesByFullPath {
   '/features/live-wallpapers': typeof FeaturesLiveWallpapersRoute
   '/guides/best-chrome-new-tab-extensions': typeof GuidesBestChromeNewTabExtensionsRoute
   '/guides/best-chrome-wallpaper-extensions': typeof GuidesBestChromeWallpaperExtensionsRoute
+  '/guides/chrome-new-tab-extension': typeof GuidesChromeNewTabExtensionRoute
+  '/guides/live-start-page': typeof GuidesLiveStartPageRoute
+  '/guides/new-tab-page': typeof GuidesNewTabPageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -88,6 +110,9 @@ export interface FileRoutesByTo {
   '/features/live-wallpapers': typeof FeaturesLiveWallpapersRoute
   '/guides/best-chrome-new-tab-extensions': typeof GuidesBestChromeNewTabExtensionsRoute
   '/guides/best-chrome-wallpaper-extensions': typeof GuidesBestChromeWallpaperExtensionsRoute
+  '/guides/chrome-new-tab-extension': typeof GuidesChromeNewTabExtensionRoute
+  '/guides/live-start-page': typeof GuidesLiveStartPageRoute
+  '/guides/new-tab-page': typeof GuidesNewTabPageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -100,6 +125,9 @@ export interface FileRoutesById {
   '/features/live-wallpapers': typeof FeaturesLiveWallpapersRoute
   '/guides/best-chrome-new-tab-extensions': typeof GuidesBestChromeNewTabExtensionsRoute
   '/guides/best-chrome-wallpaper-extensions': typeof GuidesBestChromeWallpaperExtensionsRoute
+  '/guides/chrome-new-tab-extension': typeof GuidesChromeNewTabExtensionRoute
+  '/guides/live-start-page': typeof GuidesLiveStartPageRoute
+  '/guides/new-tab-page': typeof GuidesNewTabPageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -113,6 +141,9 @@ export interface FileRouteTypes {
     | '/features/live-wallpapers'
     | '/guides/best-chrome-new-tab-extensions'
     | '/guides/best-chrome-wallpaper-extensions'
+    | '/guides/chrome-new-tab-extension'
+    | '/guides/live-start-page'
+    | '/guides/new-tab-page'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -124,6 +155,9 @@ export interface FileRouteTypes {
     | '/features/live-wallpapers'
     | '/guides/best-chrome-new-tab-extensions'
     | '/guides/best-chrome-wallpaper-extensions'
+    | '/guides/chrome-new-tab-extension'
+    | '/guides/live-start-page'
+    | '/guides/new-tab-page'
   id:
     | '__root__'
     | '/'
@@ -135,6 +169,9 @@ export interface FileRouteTypes {
     | '/features/live-wallpapers'
     | '/guides/best-chrome-new-tab-extensions'
     | '/guides/best-chrome-wallpaper-extensions'
+    | '/guides/chrome-new-tab-extension'
+    | '/guides/live-start-page'
+    | '/guides/new-tab-page'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -147,6 +184,9 @@ export interface RootRouteChildren {
   FeaturesLiveWallpapersRoute: typeof FeaturesLiveWallpapersRoute
   GuidesBestChromeNewTabExtensionsRoute: typeof GuidesBestChromeNewTabExtensionsRoute
   GuidesBestChromeWallpaperExtensionsRoute: typeof GuidesBestChromeWallpaperExtensionsRoute
+  GuidesChromeNewTabExtensionRoute: typeof GuidesChromeNewTabExtensionRoute
+  GuidesLiveStartPageRoute: typeof GuidesLiveStartPageRoute
+  GuidesNewTabPageRoute: typeof GuidesNewTabPageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -214,6 +254,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuidesBestChromeWallpaperExtensionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guides/chrome-new-tab-extension': {
+      id: '/guides/chrome-new-tab-extension'
+      path: '/guides/chrome-new-tab-extension'
+      fullPath: '/guides/chrome-new-tab-extension'
+      preLoaderRoute: typeof GuidesChromeNewTabExtensionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guides/live-start-page': {
+      id: '/guides/live-start-page'
+      path: '/guides/live-start-page'
+      fullPath: '/guides/live-start-page'
+      preLoaderRoute: typeof GuidesLiveStartPageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guides/new-tab-page': {
+      id: '/guides/new-tab-page'
+      path: '/guides/new-tab-page'
+      fullPath: '/guides/new-tab-page'
+      preLoaderRoute: typeof GuidesNewTabPageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -228,6 +289,9 @@ const rootRouteChildren: RootRouteChildren = {
   GuidesBestChromeNewTabExtensionsRoute: GuidesBestChromeNewTabExtensionsRoute,
   GuidesBestChromeWallpaperExtensionsRoute:
     GuidesBestChromeWallpaperExtensionsRoute,
+  GuidesChromeNewTabExtensionRoute: GuidesChromeNewTabExtensionRoute,
+  GuidesLiveStartPageRoute: GuidesLiveStartPageRoute,
+  GuidesNewTabPageRoute: GuidesNewTabPageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -21,6 +21,21 @@ export const GUIDES = [
     name: "Live wallpapers for Chrome",
     blurb: "How animated new tab backgrounds work, and what they cost in battery and memory.",
   },
+  {
+    path: "/guides/chrome-new-tab-extension",
+    name: "Chrome new tab extension",
+    blurb: "How to pick the right one: what to look for and a quick way to compare before you install.",
+  },
+  {
+    path: "/guides/live-start-page",
+    name: "Live Start Page",
+    blurb: "Live wallpaper start pages that stay fast, readable and useful every day.",
+  },
+  {
+    path: "/guides/new-tab-page",
+    name: "New tab page",
+    blurb: "Ideas and a checklist for a new tab page that's worth opening.",
+  },
 ] as const;
 
 export type GuidePath = (typeof GUIDES)[number]["path"];

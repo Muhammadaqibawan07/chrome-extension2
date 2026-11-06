@@ -1,6 +1,6 @@
 /* Small live mock-ups of Atlas features, drawn in HTML so they animate,
    pick up the theme colour and never repeat a screenshot. */
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode, type RefObject } from "react";
 import { Reveal } from "@/components/site/layout";
 
 /* ---------- shared bits ---------- */
@@ -88,6 +88,69 @@ export function hm(d: Date | null, opts?: { seconds?: boolean }) {
   return opts?.seconds ? `${h}:${m}:${String(d.getSeconds()).padStart(2, "0")}` : `${h}:${m}`;
 }
 
+/* plays a muted background video only while it's on screen, and not before the page has
+   finished loading, so clips never compete with the first paint. Pair it with
+   preload="none" and a poster: nothing downloads until the clip is actually needed. */
+export function useLazyPlay(ref: RefObject<HTMLVideoElement | null>, deps: unknown[] = []) {
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let io: IntersectionObserver | null = null;
+    const start = () => {
+      io = new IntersectionObserver(([e]) => (e.isIntersecting ? v.play().catch(() => {}) : v.pause()), { rootMargin: "100px 0px" });
+      io.observe(v);
+    };
+    /* wait for the load event, plus a beat, so the hero's text and images come first */
+    let t = 0;
+    const later = () => (t = window.setTimeout(start, 300));
+    if (document.readyState === "complete") later();
+    else window.addEventListener("load", later, { once: true });
+    return () => {
+      window.removeEventListener("load", later);
+      clearTimeout(t);
+      io?.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
+
+/* proper names for the icons in public/media/apps/, for alt text */
+const APP_NAME: Record<string, string> = {
+  youtube: "YouTube",
+  spotify: "Spotify",
+  drive: "Google Drive",
+  gmail: "Gmail",
+  docs: "Google Docs",
+  sheets: "Google Sheets",
+  calendar: "Google Calendar",
+  maps: "Google Maps",
+  photos: "Google Photos",
+  github: "GitHub",
+  discord: "Discord",
+  notion: "Notion",
+  figma: "Figma",
+  reddit: "Reddit",
+  slack: "Slack",
+  x: "X (Twitter)",
+  linear: "Linear",
+  vercel: "Vercel",
+  hackernews: "Hacker News",
+  google: "Google",
+  wikipedia: "Wikipedia",
+  translate: "Google Translate",
+  meet: "Google Meet",
+  keep: "Google Keep",
+  medium: "Medium",
+  stackoverflow: "Stack Overflow",
+  weather: "Weather",
+};
+
+/* alt text for an app icon, e.g. "YouTube logo" */
+export function appAlt(n: string) {
+  return (APP_NAME[n] ?? n.charAt(0).toUpperCase() + n.slice(1)) + " logo";
+}
+
 /* where each bubble goes when clicked, like a real shortcut */
 const APP_URL: Record<string, string> = {
   youtube: "https://www.youtube.com",
@@ -115,7 +178,7 @@ export function AppIcon({ n, label, style }: { n: string; label?: string; style?
   const inner = (
     <>
       <span className="bub">
-        <img src={`/media/apps/${n}.svg`} alt="" loading="lazy" />
+        <img src={`/media/apps/${n}.svg`} alt={appAlt(n)} width={24} height={24} loading="lazy" decoding="async" />
       </span>
       {label && <small>{label}</small>}
     </>
@@ -219,10 +282,7 @@ export function NewTabMock({ wall = "meadow" }: { wall?: string }) {
   const vref = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(true);
 
-  useEffect(() => {
-    const v = vref.current;
-    if (v && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) v.play().catch(() => {});
-  }, [wall]);
+  useLazyPlay(vref, [wall]);
 
   /* tilt toward the pointer */
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
@@ -247,11 +307,11 @@ export function NewTabMock({ wall = "meadow" }: { wall?: string }) {
           <i />
           <i />
           <span className="nt-url">
-            <img src="/media/icon.png" alt="" /> New Tab
+            <img src="/media/icon.png" alt="Atlas logo" width={16} height={16} /> New Tab
           </span>
         </div>
         <div className="nt-body">
-          <video ref={vref} className="nt-bg" src={`/media/wp/${wall}.mp4`} poster={`/media/wp/${wall}.jpg`} muted loop playsInline autoPlay preload="metadata" />
+          <video ref={vref} className="nt-bg" src={`/media/wp/${wall}.mp4`} poster={`/media/wp/${wall}.jpg`} muted loop playsInline preload="none" />
           <div className="nt-top">
             <div className="nt-clock">
               <b>{hm(now)}</b>
@@ -408,7 +468,7 @@ export function SearchMock() {
     <div className="srch">
       <div className="srch-bar glass-solid">
         <span className="srch-eng" key={n}>
-          <img src={`/media/apps/${n}.svg`} alt="" />
+          <img src={`/media/apps/${n}.svg`} alt={appAlt(n)} loading="lazy" decoding="async" />
         </span>
         <span className="srch-q" key={q}>
           <em>{bang}</em> {q}
@@ -420,7 +480,7 @@ export function SearchMock() {
       <div className="srch-chips">
         {ENGINES.map(([e, l], k) => (
           <button type="button" key={e} className={k === i ? "on" : ""} aria-pressed={k === i} onClick={() => pick(k)}>
-            <img src={`/media/apps/${e}.svg`} alt="" />
+            <img src={`/media/apps/${e}.svg`} alt={appAlt(e)} loading="lazy" decoding="async" />
             {l}
           </button>
         ))}
@@ -616,7 +676,7 @@ export function StatsMock() {
           ["youtube", "youtube.com", "1h 48m"],
         ].map(([n, d, t]) => (
           <li key={d}>
-            <img src={`/media/apps/${n}.svg`} alt="" />
+            <img src={`/media/apps/${n}.svg`} alt={appAlt(n)} loading="lazy" decoding="async" />
             {d}
             <small>{t}</small>
           </li>
@@ -641,7 +701,7 @@ export function PlannerMock() {
           <small>{t}</small>
           <span>
             {l}
-            {ic && <img src={`/media/apps/${ic}.svg`} alt="" />}
+            {ic && <img src={`/media/apps/${ic}.svg`} alt={appAlt(ic)} loading="lazy" decoding="async" />}
           </span>
           {i === 0 && (
             <button type="button" className={"tl-btn" + (started ? " is-on" : "")} onClick={() => setStarted((s) => !s)}>
@@ -660,7 +720,7 @@ export function BlockMock() {
   return (
     <div className="block">
       <div className="block-url glass-solid">
-        <img src="/media/apps/reddit.svg" alt="" />
+        <img src="/media/apps/reddit.svg" alt="Reddit logo" loading="lazy" decoding="async" />
         <span>reddit.com/r/all</span>
       </div>
       <div className="block-page">
@@ -697,7 +757,7 @@ export function TabsMock() {
     <div className="tabs">
       {tabs.map(([n, t, s], i) => (
         <div className={"tabrow " + s} key={i} style={{ "--d": i * 90 + "ms" } as CSSProperties}>
-          <img src={`/media/apps/${n}.svg`} alt="" />
+          <img src={`/media/apps/${n}.svg`} alt={appAlt(n)} loading="lazy" decoding="async" />
           <span>{t}</span>
           {s === "zz" && <em>Asleep</em>}
           {s === "playing" && <em className="live">Playing</em>}
@@ -743,7 +803,7 @@ export function TranslateMock() {
   return (
     <div className="tr">
       <div className="tr-badge glass-solid">
-        <img src="/media/apps/translate.svg" alt="" />
+        <img src="/media/apps/translate.svg" alt="Google Translate logo" loading="lazy" decoding="async" />
         <button type="button" className="tr-lang" key={i} onClick={() => pick((i + 1) % HELLO.length)} title="Next language">
           {HELLO[i][0]}
         </button>
@@ -810,7 +870,7 @@ export function CalendarMock() {
           </span>
           {meet && (
             <a className="ag-join" href="https://meet.google.com" target="_blank" rel="noopener noreferrer">
-              <img src="/media/apps/meet.svg" alt="" /> Join
+              <img src="/media/apps/meet.svg" alt="Google Meet logo" loading="lazy" decoding="async" /> Join
             </a>
           )}
         </div>
@@ -869,7 +929,7 @@ export function SyncMock() {
         <i />
       </span>
       <span className="dev hub">
-        <img src="/media/icon.png" alt="" />
+        <img src="/media/icon.png" alt="Atlas logo" loading="lazy" decoding="async" />
       </span>
       <span className="wire">
         <i />
@@ -937,9 +997,11 @@ export function ZenMock() {
     ["Tokyo", 9],
     ["New York", -5],
   ];
+  const vref = useRef<HTMLVideoElement>(null);
+  useLazyPlay(vref);
   return (
     <div className="zen">
-      <video className="zen-bg" src="/media/wp/monolith.mp4" poster="/media/wp/monolith.jpg" muted loop playsInline autoPlay preload="metadata" />
+      <video ref={vref} className="zen-bg" src="/media/wp/monolith.mp4" poster="/media/wp/monolith.jpg" muted loop playsInline preload="none" />
       <b className="zen-t">{hm(now, { seconds: true })}</b>
       <small className="zen-d">{now ? now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) : " "}</small>
       <span className="zen-w">

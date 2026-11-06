@@ -113,7 +113,7 @@ export function AnimeLovers() {
     }, 2500);
     const el = rootRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => e.isIntersecting && (setSeen(true), io.disconnect()), { rootMargin: "1200px 0px" });
+    const io = new IntersectionObserver(([e]) => e.isIntersecting && (setSeen(true), io.disconnect()), { rootMargin: "300px 0px" });
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -362,7 +362,7 @@ function SpotMedia({ item, onStatus }: { item: AnimeItem; onStatus: (id: string,
 
   return (
     <div className="spot-media">
-      <img className="spot-poster" src={item.poster} alt="" referrerPolicy="no-referrer" />
+      <img className="spot-poster" src={item.poster} alt={(item.title || "Anime wallpaper") + " preview"} referrerPolicy="no-referrer" />
       {status !== "failed" &&
         (live ? (
           <video
@@ -382,7 +382,7 @@ function SpotMedia({ item, onStatus }: { item: AnimeItem; onStatus: (id: string,
             key={attempt}
             className={"spot-full" + (status === "ready" ? " on" : "")}
             src={src}
-            alt=""
+            alt={(item.title || "Anime wallpaper") + " — 4K anime wallpaper"}
             referrerPolicy="no-referrer"
             decoding="async"
             fetchPriority="high"
@@ -430,7 +430,7 @@ function WallCard({ it, k, on, dim, onPick }: { it: AnimeItem; k: number; on: bo
       aria-pressed={on}
     >
       <span className="holo-in">
-        <img src={it.thumb} alt="" referrerPolicy="no-referrer" loading="lazy" />
+        <img src={it.thumb} alt={(it.title || "Anime wallpaper") + " thumbnail"} referrerPolicy="no-referrer" loading="lazy" decoding="async" />
         {hover && it.kind === "live" && <video src={clipSrc(it.media)} muted loop playsInline autoPlay />}
         <span className="holo-foil" />
         <span className="holo-badge">

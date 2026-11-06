@@ -237,7 +237,7 @@ function Profile({ dev, wide, delay }: { dev: Developer; wide: boolean; delay: n
             </span>
             <span className="dev-face">
               {dev.photo ? (
-                <img src={dev.photo} alt="" />
+                <img src={dev.photo} alt={`Photo of ${dev.name}`} loading="lazy" decoding="async" />
               ) : (
                 <span className="dev-initials">{dev.initials}</span>
               )}

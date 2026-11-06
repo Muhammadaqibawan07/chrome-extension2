@@ -13,6 +13,9 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { protectMedia } from "../lib/protect-media";
 
+const FONTS_CSS =
+  "https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300..800&family=Instrument+Serif:ital@0;1&display=swap";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -91,10 +94,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300..800&family=Instrument+Serif:ital@0;1&display=swap",
-      },
+      /* fetched early, applied by the script below without blocking the first paint */
+      { rel: "preload", as: "style", href: FONTS_CSS },
       {
         rel: "stylesheet",
         href: appCss,
@@ -102,6 +103,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", href: "/media/icon.png" },
       { rel: "apple-touch-icon", href: "/media/icon.png" },
       { rel: "sitemap", type: "application/xml", href: "/sitemap.xml" },
+    ],
+    /* a stylesheet added by script doesn't hold up rendering; text shows in the fallback
+       font for a moment and swaps (display=swap) when the web fonts arrive */
+    scripts: [
+      {
+        children: `(function(){var l=document.createElement("link");l.rel="stylesheet";l.href=${JSON.stringify(FONTS_CSS)};document.head.appendChild(l)})()`,
+      },
     ],
   }),
   shellComponent: RootShell,
